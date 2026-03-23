@@ -1,0 +1,18 @@
+{
+  "name": "gst-audit-portal",
+  "version": "2.0.0",
+  "description": "GST Audit Portal with Odoo + Firebase integration",
+  "main": "gst-server.js",
+  "scripts": {
+    "start": "node gst-server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
