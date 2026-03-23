@@ -85,3 +85,13 @@
   }
 })();
 
+
+// Auto-load from server on page open
+document.addEventListener('DOMContentLoaded', function() {
+  fetch('/api/state').then(r=>r.json()).then(d=>{
+    if(d.state && localStorage.length < 5) {
+      Object.keys(d.state).forEach(k => localStorage.setItem(k, JSON.stringify(d.state[k])));
+      location.reload();
+    }
+  }).catch(()=>{});
+});
