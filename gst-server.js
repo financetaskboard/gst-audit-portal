@@ -1,6 +1,5 @@
 /**
  * ╔══════════════════════════════════════════════════════════════╗
-<<<<<<< HEAD
  * ║   GST AUDIT PORTAL — Odoo Proxy + Firebase Server  v2.1     ║
  * ║   Runs on http://localhost:3002  (or Render.com online)      ║
  * ║   Data stored in Firebase Firestore (free, permanent)        ║
@@ -181,46 +180,11 @@ async function loadSettings() {
   try {
     const localFile = path.join(__dirname, 'gst-odoo-settings.json');
     if (fs.existsSync(localFile)) return JSON.parse(fs.readFileSync(localFile, 'utf8'));
-=======
- * ║       GST AUDIT PORTAL — Odoo Local Proxy Server  v1.1      ║
- * ║   Runs on http://localhost:3002                              ║
- * ║   Fetches: Sales Invoices (out_invoice)                      ║
- * ║            Credit Notes  (out_refund)                        ║
- * ╚══════════════════════════════════════════════════════════════╝
- *
- *  SETUP (one-time):
- *    1. Install Node.js  →  https://nodejs.org  (LTS version)
- *    2. Open terminal / command prompt in THIS folder
- *    3. Run:  npm install express cors node-fetch
- *    4. Run:  node gst-server.js
- *    5. Open  http://localhost:3002  in your browser
- */
-
-const express = require('express');
-const cors    = require('cors');
-const fetch   = require('node-fetch');
-const fs      = require('fs');
-const path    = require('path');
-
-const app  = express();
-const PORT = 3002;
-
-app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '10mb' }));
-
-// ── Settings (persisted to gst-odoo-settings.json) ────────────
-const SETTINGS_FILE = path.join(__dirname, 'gst-odoo-settings.json');
-
-function loadSettings() {
-  try {
-    if (fs.existsSync(SETTINGS_FILE)) return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   } catch (e) {}
   return {
     url:      'https://ginesys.odoo.com',
     db:       'ginesys',
     username: 'kunal.g@gsl.in',
-<<<<<<< HEAD
     apiKey:   ''
   };
 }
@@ -234,13 +198,6 @@ async function saveSettings(data) {
   }
   // Fallback: write local file
   fs.writeFileSync(path.join(__dirname, 'gst-odoo-settings.json'), JSON.stringify(data, null, 2));
-=======
-    apiKey:   'Anni@2312'
-  };
-}
-function saveSettings(data) {
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2));
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 }
 
 // ── Branch / Company lookup from invoice prefix ────────────────
@@ -299,10 +256,6 @@ const COMPANY_MAP = {
   'SRX':  'Roxfortech Infosolutions Private Limited',
   'RBHR': 'Roxfortech Infosolutions Private Limited',
 };
-<<<<<<< HEAD
-=======
-
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 const COKEY_MAP = {
   // ── Ginni ────────────────────────────────────────────────────
   'SWB':'gsl', 'SKN':'gsl',  'SEM':'em',    'SMH':'gsl',  'SHR':'gsl',
@@ -349,21 +302,9 @@ async function odooAuthenticate(url, db, username, password) {
   }
   const uid    = data.result.uid;
   const cookie = resp.headers.get('set-cookie') || '';
-<<<<<<< HEAD
   const session = { uid, cookie, baseUrl, companyIds: [] };
 
   // Fetch ALL company IDs this user can access
-=======
-
-  // Build a temporary session to fetch company list
-  const session = { uid, cookie, baseUrl, companyIds: [] };
-
-  // ── Fetch ALL company IDs this user can access ─────────────────────────
-  // CRITICAL FIX: Without allowed_company_ids in the API context, Odoo's
-  // search_read silently returns records for the user's ONE default company.
-  // All invoices from other companies (Easemy Business, Browntape, other
-  // Ginni branches) are excluded — this is why only ~189 of 834 invoices appear.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   try {
     const userRec = await odooCall(session, 'res.users', 'read', [[uid]], {
       fields: ['company_ids', 'company_id']
@@ -397,11 +338,6 @@ async function odooCall(session, model, method, args = [], kwargs = {}) {
       params: {
         model, method, args,
         kwargs: {
-<<<<<<< HEAD
-=======
-          // Merge allowed_company_ids into context so Odoo searches ALL companies
-          // the user can access, not just the default one.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
           context: {
             lang: 'en_IN',
             ...(session.companyIds?.length
@@ -419,14 +355,6 @@ async function odooCall(session, model, method, args = [], kwargs = {}) {
 }
 
 // ── Fetch invoices or credit notes (paginated) ────────────────
-<<<<<<< HEAD
-=======
-// Root cause of missing Feb 19-28 invoices:
-// When syncing a full FY (Apr 2025 → Mar 2026), limit:5000 would
-// fill up with Apr-Feb18 invoices and cut off Feb19-28.
-// Fix: paginate in batches of 500 until Odoo returns fewer than
-// the batch size, meaning we have reached the last page.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 async function fetchMoves(session, moveType, fromDate, toDate) {
   const BATCH = 500;
   const domain = [
@@ -451,11 +379,7 @@ async function fetchMoves(session, moveType, fromDate, toDate) {
     );
     all.push(...batch);
     console.log(`   page offset=${offset} → ${batch.length} records (total so far: ${all.length})`);
-<<<<<<< HEAD
     if (batch.length < BATCH) break;
-=======
-    if (batch.length < BATCH) break;   // last page reached
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     offset += BATCH;
   }
   return all;
@@ -484,7 +408,6 @@ async function fetchTaxLines(session, moveIds) {
 function mapRecords(raw, taxLineMap, type) {
   return raw.map(m => {
     const d  = m.invoice_date || '';
-<<<<<<< HEAD
     const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const mo = d ? (MONTH_SHORT[parseInt(d.slice(5, 7), 10) - 1] + ' ' + d.slice(0, 4)) : '';
     const { branch, company, coKey } = getBranch(m.name);
@@ -492,41 +415,12 @@ function mapRecords(raw, taxLineMap, type) {
     const invoiceCurrency   = m.currency_id?.[1] || 'INR';
     const isForeignCurrency = invoiceCurrency !== 'INR';
 
-=======
-    // Use a fixed month map — toLocaleString('en-IN') gives 'Sept' for September
-    // but the portal dropdown uses 'Sep', causing a mismatch. Fixed map ensures
-    // both always produce identical strings e.g. "Sep 2025".
-    const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    // Parse date parts directly from 'YYYY-MM-DD' — never use new Date(d).getMonth()
-    // because ISO strings parse as UTC midnight; on IST (+5:30) the month rolls back.
-    const mo = d ? (MONTH_SHORT[parseInt(d.slice(5, 7), 10) - 1] + ' ' + d.slice(0, 4)) : '';
-    const { branch, company, coKey } = getBranch(m.name);
-
-    // ── Detect foreign currency ────────────────────────────────
-    // currency_id comes as [id, 'USD'] from Odoo
-    const invoiceCurrency    = m.currency_id?.[1] || 'INR';
-    const isForeignCurrency  = invoiceCurrency !== 'INR';
-
-    // ── Taxable value — always in INR ──────────────────────────
-    // • amount_untaxed_signed  → always in company currency (INR), even for USD invoices  ✅
-    // • amount_untaxed         → in invoice currency (USD for export invoices)            ❌
-    // We use amount_untaxed_signed and fall back to amount_untaxed only if the field is
-    // unavailable (very old Odoo versions that don't expose _signed fields).
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const taxableINR = Math.abs(
       (m.amount_untaxed_signed !== undefined && m.amount_untaxed_signed !== false)
         ? m.amount_untaxed_signed
         : m.amount_untaxed
     );
 
-<<<<<<< HEAD
-=======
-    // ── GST amounts — always in INR ────────────────────────────
-    // Priority 1 — account.move.line tax lines using `balance` field.
-    // `balance` is ALWAYS stored in company currency (INR) in Odoo,
-    // whereas `debit`/`credit` are in the invoice's own currency.
-    // So for a USD export invoice, balance gives the correct INR GST amount.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     let cgst = 0, sgst = 0, igst = 0;
     (taxLineMap[m.id] || []).forEach(l => {
       const n   = (l.name || l.tax_line_id?.[1] || '').toUpperCase();
@@ -536,11 +430,6 @@ function mapRecords(raw, taxLineMap, type) {
       else if (n.includes('IGST'))                        igst += amt;
     });
 
-<<<<<<< HEAD
-=======
-    // Priority 2 — tax_totals JSON on account.move.
-    // Odoo stores tax_totals in company currency (INR) — safe for foreign currency invoices.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     if (cgst === 0 && sgst === 0 && igst === 0) {
       const tt = m.tax_totals || {};
       if (tt.groups_by_subtotal) {
@@ -554,11 +443,6 @@ function mapRecords(raw, taxLineMap, type) {
       }
     }
 
-<<<<<<< HEAD
-=======
-    // Priority 3 — last resort: split amount_tax_signed 50/50 as CGST+SGST.
-    // amount_tax_signed is also always in INR — safe for foreign currency invoices.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     if (cgst === 0 && sgst === 0 && igst === 0) {
       const totalTaxINR = Math.abs(
         (m.amount_tax_signed !== undefined && m.amount_tax_signed !== false)
@@ -569,11 +453,7 @@ function mapRecords(raw, taxLineMap, type) {
     }
 
     const round = v => Math.round(v * 100) / 100;
-<<<<<<< HEAD
     const gstin = '';
-=======
-    const gstin = ''; // GSTIN fetched separately if needed
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 
     if (type === 'sales') {
       return {
@@ -585,21 +465,12 @@ function mapRecords(raw, taxLineMap, type) {
         company,
         coKey,
         month:               mo,
-<<<<<<< HEAD
         currency:            invoiceCurrency,
         is_foreign_currency: isForeignCurrency,
         taxable:             round(taxableINR),
         cgst:                round(cgst),
         sgst:                round(sgst),
         igst:                round(igst),
-=======
-        currency:            invoiceCurrency,       // 'USD', 'EUR', 'INR' etc. — shown as badge
-        is_foreign_currency: isForeignCurrency,     // true for export invoices
-        taxable:             round(taxableINR),      // always INR ✅
-        cgst:                round(cgst),            // always INR ✅
-        sgst:                round(sgst),            // always INR ✅
-        igst:                round(igst),            // always INR ✅
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
         recon_status:        'Pending'
       };
     } else {
@@ -614,17 +485,10 @@ function mapRecords(raw, taxLineMap, type) {
         month:               mo,
         currency:            invoiceCurrency,
         is_foreign_currency: isForeignCurrency,
-<<<<<<< HEAD
         amount:              round(taxableINR),
         cgst:                round(cgst),
         sgst:                round(sgst),
         igst:                round(igst),
-=======
-        amount:              round(taxableINR),      // always INR ✅
-        cgst:                round(cgst),            // always INR ✅
-        sgst:                round(sgst),            // always INR ✅
-        igst:                round(igst),            // always INR ✅
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
         gstr1_status:        'Pending'
       };
     }
@@ -636,7 +500,6 @@ function mapRecords(raw, taxLineMap, type) {
 // ══════════════════════════════════════════════════════════════
 
 app.get('/health', (req, res) => {
-<<<<<<< HEAD
   res.json({
     status:   'ok',
     server:   'GST Audit Proxy v2.1 — chunked Firebase storage',
@@ -657,22 +520,6 @@ app.post('/api/settings', async (req, res) => {
     const incoming = req.body;
     if (incoming.apiKey === '••••••••') delete incoming.apiKey;
     await saveSettings({ ...s, ...incoming });
-=======
-  res.json({ status: 'ok', server: 'GST Audit Proxy v1.2 — multi-company fix', port: PORT, time: new Date().toISOString() });
-});
-
-app.get('/api/settings', (req, res) => {
-  const s = loadSettings();
-  res.json({ ...s, apiKey: s.apiKey ? '••••••••' : '' });
-});
-
-app.post('/api/settings', (req, res) => {
-  try {
-    const s = loadSettings();
-    const incoming = req.body;
-    if (incoming.apiKey === '••••••••') delete incoming.apiKey;
-    saveSettings({ ...s, ...incoming });
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -680,13 +527,8 @@ app.post('/api/settings', (req, res) => {
 });
 
 app.post('/api/test', async (req, res) => {
-<<<<<<< HEAD
   const s = { ...await loadSettings(), ...req.body };
   if (req.body.apiKey === '••••••••') s.apiKey = (await loadSettings()).apiKey;
-=======
-  const s = { ...loadSettings(), ...req.body };
-  if (req.body.apiKey === '••••••••') s.apiKey = loadSettings().apiKey;
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   try {
     const session = await odooAuthenticate(s.url, s.db, s.username, s.apiKey);
     const count   = await odooCall(session, 'account.move', 'search_count', [[
@@ -699,11 +541,7 @@ app.post('/api/test', async (req, res) => {
 });
 
 app.post('/api/sync/sales', async (req, res) => {
-<<<<<<< HEAD
   const s   = await loadSettings();
-=======
-  const s   = loadSettings();
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   const cfg = {
     url:      req.body.url      || s.url,
     db:       req.body.db       || s.db,
@@ -733,11 +571,7 @@ app.post('/api/sync/sales', async (req, res) => {
 });
 
 app.post('/api/sync/credit', async (req, res) => {
-<<<<<<< HEAD
   const s   = await loadSettings();
-=======
-  const s   = loadSettings();
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   const cfg = {
     url:      req.body.url      || s.url,
     db:       req.body.db       || s.db,
@@ -766,7 +600,6 @@ app.post('/api/sync/credit', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // ── RCM Sync (transaction-wise) ───────────────────────────────
 const RCM_ACCOUNT_TYPE = {
   '234005':  'igst',
@@ -775,28 +608,10 @@ const RCM_ACCOUNT_TYPE = {
   '2341015': 'cgst',
   '234007':  'sgst',
   '2341017': 'sgst',
-=======
-// ══════════════════════════════════════════════════════════════
-//  NEW ROUTE — RCM Sync (all code above is untouched)
-// ══════════════════════════════════════════════════════════════
-
-const RCM_ACCOUNT_TYPE = {
-  '234005':  'igst',   // RCM IGST Receivable
-  '2341013': 'igst',   // RCM IGST Receivable-BT
-  '234006':  'cgst',   // RCM CGST Receivable
-  '2341015': 'cgst',   // RCM CGST Receivable-Zwing
-  '234007':  'sgst',   // RCM SGST Receivable
-  '2341017': 'sgst',   // RCM SGST Receivable-Zwing
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 };
 const RCM_ACCOUNT_CODES = Object.keys(RCM_ACCOUNT_TYPE);
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-<<<<<<< HEAD
-=======
-// ── Journal prefix → Branch / Company mapping ─────────────────
-// Journal Entry No format in Odoo: PREFIX/YYYY/NNNNN  e.g. BHR/2025/00123
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 const RCM_JOURNAL_MAP = {
   'BHR':   { branch: 'Haryana',       company: 'Ginni Systems Limited',                    coKey: 'gsl'   },
   'BMH':   { branch: 'Maharashtra',   company: 'Ginni Systems Limited',                    coKey: 'gsl'   },
@@ -810,10 +625,6 @@ const RCM_JOURNAL_MAP = {
   'BILLE': { branch: 'Haryana',       company: 'Easemy Business Private Limited',          coKey: 'em'    },
   'RBHR':  { branch: 'Haryana',       company: 'Roxfortech Infosolutions Private Limited', coKey: 'roxfo' },
   'BILRO': { branch: 'Haryana',       company: 'Roxfortech Infosolutions Private Limited', coKey: 'roxfo' },
-<<<<<<< HEAD
-=======
-  // NOTE: BILL/* entries are intentionally excluded from RCM sync (cross-company Roxfortech entries)
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 };
 
 function getRCMJournalInfo(moveName) {
@@ -822,11 +633,7 @@ function getRCMJournalInfo(moveName) {
 }
 
 app.post('/api/sync/rcm', async (req, res) => {
-<<<<<<< HEAD
   const s   = await loadSettings();
-=======
-  const s   = loadSettings();
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   const cfg = {
     url:      req.body.url      || s.url,
     db:       req.body.db       || s.db,
@@ -838,10 +645,6 @@ app.post('/api/sync/rcm', async (req, res) => {
     console.log(`\n📦 RCM sync (transaction-wise): ${fromDate} → ${toDate}`);
     const session = await odooAuthenticate(cfg.url, cfg.db, cfg.username, cfg.apiKey);
 
-<<<<<<< HEAD
-=======
-    // Step 1: Resolve account IDs from codes
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const accounts = await odooCall(session, 'account.account', 'search_read',
       [[['code', 'in', RCM_ACCOUNT_CODES]]],
       { fields: ['id', 'code', 'name'], limit: 50 }
@@ -856,10 +659,6 @@ app.post('/api/sync/rcm', async (req, res) => {
     accounts.forEach(a => { acIdToCode[a.id] = a.code; });
     const acIds = accounts.map(a => a.id);
 
-<<<<<<< HEAD
-=======
-    // Step 2: Fetch posted journal lines for RCM accounts (paginated)
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const BATCH = 500;
     const domain = [
       ['account_id',   'in', acIds],
@@ -882,18 +681,9 @@ app.post('/api/sync/rcm', async (req, res) => {
     }
     console.log(`   ${allLines.length} RCM journal lines`);
 
-<<<<<<< HEAD
     const moveIdSet = new Set(allLines.map(l => l.move_id[0]));
     const moveIds   = Array.from(moveIdSet);
 
-=======
-    // Step 3: Collect unique move IDs
-    const moveIdSet = new Set(allLines.map(l => l.move_id[0]));
-    const moveIds   = Array.from(moveIdSet);
-    console.log(`   ${moveIds.length} unique journal entries`);
-
-    // Step 4: Fetch parent moves — name, date, vendor (partner_id), taxable value
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const movesMap = {};
     for (let i = 0; i < moveIds.length; i += 200) {
       const batch = await odooCall(session, 'account.move', 'read',
@@ -904,10 +694,6 @@ app.post('/api/sync/rcm', async (req, res) => {
       batch.forEach(m => { movesMap[m.id] = m; });
     }
 
-<<<<<<< HEAD
-=======
-    // Step 5: Aggregate IGST/CGST/SGST per move
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const moveTax = {};
     allLines.forEach(line => {
       const mid  = line.move_id[0];
@@ -920,7 +706,6 @@ app.post('/api/sync/rcm', async (req, res) => {
       else if (type === 'sgst') moveTax[mid].sgst += amt;
     });
 
-<<<<<<< HEAD
     const round = v => Math.round(v * 100) / 100;
     const data = moveIds
       .map(mid => {
@@ -930,20 +715,6 @@ app.post('/api/sync/rcm', async (req, res) => {
         const d     = (move && (move.date || move.invoice_date)) || '';
         const month = d
           ? MONTH_LABELS[parseInt(d.slice(5, 7), 10) - 1] + ' ' + d.slice(0, 4)
-=======
-    // Step 6: Build transaction-wise result
-    const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const round = v => Math.round(v * 100) / 100;
-
-    const data = moveIds
-      .map(mid => {
-        const move    = movesMap[mid];
-        const tax     = moveTax[mid] || { igst: 0, cgst: 0, sgst: 0 };
-        const info    = getRCMJournalInfo(move ? move.name : '');
-        const d       = (move && (move.date || move.invoice_date)) || '';  // accounting date first
-        const month   = d
-          ? MONTH_SHORT[parseInt(d.slice(5, 7), 10) - 1] + ' ' + d.slice(0, 4)
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
           : '';
         const taxable = move
           ? Math.abs(
@@ -957,13 +728,8 @@ app.post('/api/sync/rcm', async (req, res) => {
           entryNo: move ? move.name : String(mid),
           date:    d,
           month,
-<<<<<<< HEAD
           vendor:  move?.partner_id?.[1] || '—',
           ref:     move?.ref || '',
-=======
-          vendor:  move?.partner_id?.[1]  || '—',
-          ref:     move?.ref              || '',
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
           branch:  info.branch,
           company: info.company,
           coKey:   info.coKey,
@@ -974,11 +740,6 @@ app.post('/api/sync/rcm', async (req, res) => {
         };
       })
       .filter(r => {
-<<<<<<< HEAD
-=======
-        // Exclude journal entries whose name starts with BILL/ — these belong to
-        // Roxfortech (cross-company) and should not appear in RCM sync
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
         const prefix = (r.entryNo || '').split('/')[0].toUpperCase();
         if (prefix === 'BILL') {
           console.log(`   ⛔ Skipping BILL entry: ${r.entryNo}`);
@@ -996,7 +757,6 @@ app.post('/api/sync/rcm', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // ── ITC Books Sync ────────────────────────────────────────────
 const ITC_ACCOUNT_MAP = {
   '234001':  { taxType: 'cgst', itcType: 'Normal', coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
@@ -1011,174 +771,6 @@ const ITC_ACCOUNT_MAP = {
   '2341003': { taxType: 'cgst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
   '2341007': { taxType: 'sgst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
   '2341011': { taxType: 'igst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
-=======
-// Serve the portal HTML at http://localhost:3002
-const portalFile = path.join(__dirname, 'gst-audit-portal-v5.html');
-app.get('/', (req, res) => {
-  fs.existsSync(portalFile)
-    ? res.sendFile(portalFile)
-    : res.send(`<h2 style="font-family:Segoe UI;padding:40px">⚠ Place gst-audit-portal-v5.html in this folder: ${__dirname}</h2>`);
-});
-
-// ══════════════════════════════════════════════════════════════
-//  NEW ROUTE: RCM Sync — Fetches debit balances of RCM receivable
-//  accounts from Odoo Journal Items (account.move.line)
-//  Accounts: 234005, 2341013 (IGST), 234006, 2341015 (CGST),
-//            234007, 2341017 (SGST)
-// ══════════════════════════════════════════════════════════════
-app.post('/api/sync/rcm', async (req, res) => {
-  const RCM_ACCOUNTS = ['234005', '2341013', '234006', '234007', '2341015', '2341017'];
-
-  // Map account code prefix → tax type
-  const RCM_TYPE = {
-    '234005':  'igst',
-    '2341013': 'igst',
-    '234006':  'cgst',
-    '2341015': 'cgst',
-    '234007':  'sgst',
-    '2341017': 'sgst'
-  };
-
-  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  // Company name → key mapping (lowercase fragment match)
-  const CO_MATCH = [
-    { key: 'gsl',    frags: ['ginni'] },
-    { key: 'em',     frags: ['easemy'] },
-    { key: 'bt',     frags: ['browntape'] },
-    { key: 'roxfo',  frags: ['roxfortech'] }
-  ];
-  function getCoKey(name) {
-    const n = (name || '').toLowerCase();
-    for (const co of CO_MATCH) {
-      if (co.frags.some(f => n.includes(f))) return co.key;
-    }
-    return 'gsl'; // default
-  }
-
-  const s   = loadSettings();
-  const cfg = {
-    url:      req.body.url      || s.url,
-    db:       req.body.db       || s.db,
-    username: req.body.username || s.username,
-    apiKey:   req.body.apiKey === '••••••••' ? s.apiKey : (req.body.apiKey || s.apiKey)
-  };
-  const { fromDate, toDate } = req.body;
-
-  try {
-    console.log(`\n📦 RCM sync: ${fromDate} → ${toDate}`);
-    const session = await odooAuthenticate(cfg.url, cfg.db, cfg.username, cfg.apiKey);
-
-    // Fetch all RCM journal lines within the date range
-    const lines = await odooCall(session, 'account.move.line', 'search_read', [[
-      ['account_id.code', 'in', RCM_ACCOUNTS],
-      ['move_id.state', '=', 'posted'],
-      ['date', '>=', fromDate],
-      ['date', '<=', toDate]
-    ]], {
-      fields: ['date', 'name', 'account_id', 'debit', 'credit', 'balance', 'move_id', 'company_id'],
-      limit:  10000,
-      order:  'date asc'
-    });
-
-    console.log(`   ${lines.length} RCM journal lines`);
-
-    // Group by company × month
-    const groups = {};
-    lines.forEach(l => {
-      // Parse date directly from string to avoid timezone issues
-      const d  = l.date || '';               // "2025-04-15"
-      const yr = parseInt(d.slice(0, 4));
-      const mo = parseInt(d.slice(5, 7)) - 1;  // 0-based
-      if (isNaN(yr) || isNaN(mo)) return;
-      const mKey   = MONTHS_SHORT[mo] + ' ' + yr;   // "Apr 2025"
-
-      const coRaw  = l.company_id?.[1] || '';
-      const coKey  = getCoKey(coRaw);
-      const gKey   = coKey + '|' + mKey;
-
-      if (!groups[gKey]) {
-        groups[gKey] = { month: mKey, company: coRaw, coKey, igst: 0, cgst: 0, sgst: 0 };
-      }
-
-      // Identify tax type from account display name (format: "CODE Account Name")
-      const accDisplay = l.account_id?.[1] || '';
-      const codeToken  = accDisplay.split(/[\s-]/)[0];  // take first word before space or dash
-      const taxType    = RCM_TYPE[codeToken];
-
-      if (taxType) {
-        // Use debit amount — RCM receivable accounts are debited when RCM is applicable
-        const amt = Math.abs(l.debit || 0);
-        groups[gKey][taxType] += amt;
-      } else {
-        // Fallback: match any of the codes in the display name
-        for (const [code, type] of Object.entries(RCM_TYPE)) {
-          if (accDisplay.includes(code)) {
-            groups[gKey][type] += Math.abs(l.debit || 0);
-            break;
-          }
-        }
-      }
-    });
-
-    const data = Object.values(groups).map(g => ({
-      month:   g.month,
-      company: g.company,
-      coKey:   g.coKey,
-      igst:    Math.round(g.igst * 100) / 100,
-      cgst:    Math.round(g.cgst * 100) / 100,
-      sgst:    Math.round(g.sgst * 100) / 100
-    }));
-
-    console.log(`✅ RCM: ${data.length} company-month groups`);
-    res.json({ ok: true, count: data.length, data });
-  } catch(e) {
-    console.error('❌ RCM error:', e.message);
-    res.status(400).json({ ok: false, error: e.message });
-  }
-});
-
-// ══════════════════════════════════════════════════════════════
-//  NEW ROUTE: ITC Books Sync — Fetches credit balances of ITC
-//  receivable accounts from Odoo Journal Items (account.move.line)
-//  Company is determined by ACCOUNT CODE (not journal prefix).
-//
-//  Account → Tax Type + Company mapping:
-//    234001  CGST Receivable          → Ginni Systems Limited
-//    234002  SGST Receivable          → Ginni Systems Limited
-//    234003  IGST Receivable          → Ginni Systems Limited
-//    234004  ISD IGST Receivable      → Ginni Systems Limited
-//    234008  ISD CGST Receivable      → Ginni Systems Limited
-//    234009  ISD SGST Receivable      → Ginni Systems Limited
-//    2341002 CGST Receivable-BT       → Browntape Technologies Pvt Ltd
-//    2341006 SGST Receivable-BT       → Browntape Technologies Pvt Ltd
-//    2341010 IGST Receivable-BT       → Browntape Technologies Pvt Ltd
-//    2341003 CGST Receivable-EMG      → Easemy Business Private Limited
-//    2341007 SGST Receivable-EMG      → Easemy Business Private Limited
-//    2341011 IGST Receivable-EMG      → Easemy Business Private Limited
-//    2341001 CGST Receivable-Zwing    → Roxfortech Infosolutions Pvt Ltd
-//    2341005 SGST Receivable-Zwing    → Roxfortech Infosolutions Pvt Ltd
-//    2341009 IGST Receivable-Zwing    → Roxfortech Infosolutions Pvt Ltd
-// ══════════════════════════════════════════════════════════════
-const ITC_ACCOUNT_MAP = {
-  // ── Ginni Systems — Normal ITC ──────────────────────────────────────────────
-  '234001':  { taxType: 'cgst', itcType: 'Normal', coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
-  '234002':  { taxType: 'sgst', itcType: 'Normal', coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
-  '234003':  { taxType: 'igst', itcType: 'Normal', coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
-  // ── Ginni Systems — ISD ITC (Input Service Distributor) ────────────────────
-  '234004':  { taxType: 'igst', itcType: 'ISD',    coKey: 'gsl',   company: 'Ginni Systems Limited'                    },  // ISD IGST
-  '234008':  { taxType: 'cgst', itcType: 'ISD',    coKey: 'gsl',   company: 'Ginni Systems Limited'                    },  // ISD CGST
-  '234009':  { taxType: 'sgst', itcType: 'ISD',    coKey: 'gsl',   company: 'Ginni Systems Limited'                    },  // ISD SGST
-  // ── Browntape — Normal ITC ──────────────────────────────────────────────────
-  '2341002': { taxType: 'cgst', itcType: 'Normal', coKey: 'bt',    company: 'Browntape Technologies Private Limited'   },
-  '2341006': { taxType: 'sgst', itcType: 'Normal', coKey: 'bt',    company: 'Browntape Technologies Private Limited'   },
-  '2341010': { taxType: 'igst', itcType: 'Normal', coKey: 'bt',    company: 'Browntape Technologies Private Limited'   },
-  // ── Easemy Business — Normal ITC ────────────────────────────────────────────
-  '2341003': { taxType: 'cgst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
-  '2341007': { taxType: 'sgst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
-  '2341011': { taxType: 'igst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
-  // ── Roxfortech — Normal ITC ─────────────────────────────────────────────────
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   '2341001': { taxType: 'cgst', itcType: 'Normal', coKey: 'roxfo', company: 'Roxfortech Infosolutions Private Limited' },
   '2341005': { taxType: 'sgst', itcType: 'Normal', coKey: 'roxfo', company: 'Roxfortech Infosolutions Private Limited' },
   '2341009': { taxType: 'igst', itcType: 'Normal', coKey: 'roxfo', company: 'Roxfortech Infosolutions Private Limited' },
@@ -1186,11 +778,7 @@ const ITC_ACCOUNT_MAP = {
 const ITC_ACCOUNT_CODES = Object.keys(ITC_ACCOUNT_MAP);
 
 app.post('/api/sync/itc', async (req, res) => {
-<<<<<<< HEAD
   const s   = await loadSettings();
-=======
-  const s   = loadSettings();
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   const cfg = {
     url:      req.body.url      || s.url,
     db:       req.body.db       || s.db,
@@ -1203,10 +791,6 @@ app.post('/api/sync/itc', async (req, res) => {
     console.log(`\n📦 ITC Books sync (bill-level): ${fromDate} → ${toDate}`);
     const session = await odooAuthenticate(cfg.url, cfg.db, cfg.username, cfg.apiKey);
 
-<<<<<<< HEAD
-=======
-    // Step 1: Resolve account IDs from codes
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const accounts = await odooCall(session, 'account.account', 'search_read',
       [[['code', 'in', ITC_ACCOUNT_CODES]]],
       { fields: ['id', 'code', 'name'], limit: 100 }
@@ -1217,21 +801,10 @@ app.post('/api/sync/itc', async (req, res) => {
         message: 'No ITC accounts found with codes: ' + ITC_ACCOUNT_CODES.join(', ') });
     }
 
-<<<<<<< HEAD
-=======
-    // Build id → code map
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const acIdToCode = {};
     accounts.forEach(a => { acIdToCode[a.id] = a.code; });
     const acIds = accounts.map(a => a.id);
 
-<<<<<<< HEAD
-=======
-    // Step 2: Fetch posted journal lines for ITC accounts (paginated)
-    // move_type filter: only 'in_invoice' (vendor bills) and 'in_refund' (vendor credit notes).
-    // This excludes move_type='entry' (general journal / GST adjustment entries like MISC/MISBT)
-    // at the Odoo query level — the most reliable way to filter them out.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const BATCH = 500;
     const domain = [
       ['account_id',   'in',  acIds],
@@ -1255,39 +828,20 @@ app.post('/api/sync/itc', async (req, res) => {
     }
     console.log(`   ${allLines.length} ITC journal lines across all accounts`);
 
-<<<<<<< HEAD
     const moveGroups = {};
-=======
-    // Step 3: Group by move_id — one record per journal entry (bill)
-    // Company priority: journal prefix (if explicitly mapped) > account code.
-    // Rationale: BTBIL/MISBT clearly signal Browntape even if their ITC lines
-    // accidentally hit a Ginni account in Odoo.
-    const moveGroups = {};   // key = move_id (numeric)
-
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     allLines.forEach(l => {
       const moveId  = l.move_id[0];
       const moveNo  = l.move_id[1] || '';
       const code    = acIdToCode[l.account_id[0]];
       const acInfo  = ITC_ACCOUNT_MAP[code];
-<<<<<<< HEAD
       if (!acInfo) return;
 
       if (!moveGroups[moveId]) {
         const brInfo    = getBranch(moveNo);
-=======
-      if (!acInfo) return;   // unknown account — skip
-
-      if (!moveGroups[moveId]) {
-        const brInfo = getBranch(moveNo);
-        // If the journal prefix is explicitly in our maps, let it override the account-code
-        // company — this correctly assigns BTBIL → Browntape even when it posts to Ginni accounts.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
         const usePrefix = (brInfo.coKey !== 'other');
         moveGroups[moveId] = {
           moveId,
           moveNo,
-<<<<<<< HEAD
           billDate:     l.date || '',
           refNo:        '',
           vendorName:   '',
@@ -1311,38 +865,6 @@ app.post('/api/sync/itc', async (req, res) => {
       moveGroups[moveId][acInfo.taxType] += amt;
     });
 
-=======
-          billDate:   l.date || '',
-          refNo:      '',
-          vendorName: '',
-          isAdjustment: false,   // flagged in Step 4 when partner_id is empty
-          // itcType set from first line's account; upgraded to 'ISD' if any line
-          // hits an ISD account (234004 / 234008 / 234009).
-          itcType:    acInfo.itcType || 'Normal',
-          branch:     brInfo.branch,
-          company:    usePrefix ? brInfo.company : acInfo.company,
-          coKey:      usePrefix ? brInfo.coKey   : acInfo.coKey,
-          taxable:    0,
-          igst:       0,
-          cgst:       0,
-          sgst:       0
-        };
-      } else if (acInfo.itcType === 'ISD') {
-        // Upgrade to ISD if a subsequent line for the same move hits an ISD account.
-        moveGroups[moveId].itcType = 'ISD';
-      }
-
-      // ITC receivable accounts: credited when ITC is booked.
-      // Use whichever side carries the value (credit for booking, debit for reversal).
-      const amt = Math.abs(l.credit || 0) > Math.abs(l.debit || 0)
-        ? Math.abs(l.credit || 0)
-        : Math.abs(l.debit  || 0);
-
-      moveGroups[moveId][acInfo.taxType] += amt;
-    });
-
-    // Step 4: Batch-fetch account.move records to get ref, vendor, accounting date, taxable value
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const moveIds = Object.keys(moveGroups).map(Number);
     console.log(`   Fetching ${moveIds.length} account.move records for bill details...`);
     const MOVE_BATCH = 200;
@@ -1360,20 +882,10 @@ app.post('/api/sync/itc', async (req, res) => {
         g.vendorName = m.partner_id ? m.partner_id[1] : '';
         g.billDate   = m.date || g.billDate;
         g.taxable    = Math.abs(m.amount_untaxed || 0);
-<<<<<<< HEAD
-=======
-        // Secondary guard: flag entries with no vendor as adjustments.
-        // Primary filter is the move_type domain above, but this catches
-        // any edge cases where a 'entry'-type move still slips through.
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
         g.isAdjustment = !m.partner_id;
       });
     }
 
-<<<<<<< HEAD
-=======
-    // Step 5: Build final result array — exclude adjustment entries, add month string
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const round = v => Math.round(v * 100) / 100;
 
@@ -1382,24 +894,14 @@ app.post('/api/sync/itc', async (req, res) => {
     const bills     = allGroups.filter(g => !g.isAdjustment);
 
     if (skipped.length) {
-<<<<<<< HEAD
       console.log(`   ⚠ Skipped ${skipped.length} adjustment entries:`,
-=======
-      console.log(`   ⚠ Skipped ${skipped.length} adjustment entries (no vendor/partner_id):`,
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
         skipped.slice(0,5).map(g => g.moveNo).join(', ') + (skipped.length > 5 ? '…' : ''));
     }
 
     const data = bills.map(g => {
-<<<<<<< HEAD
       const d     = g.billDate || '';
       const yr    = parseInt(d.slice(0, 4), 10);
       const mo    = parseInt(d.slice(5, 7), 10) - 1;
-=======
-      const d  = g.billDate || '';
-      const yr = parseInt(d.slice(0, 4), 10);
-      const mo = parseInt(d.slice(5, 7), 10) - 1;  // 0-based
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
       const month = (!isNaN(yr) && !isNaN(mo) && mo >= 0 && mo <= 11)
         ? MONTH_SHORT[mo] + ' ' + yr : '';
       return {
@@ -1412,11 +914,7 @@ app.post('/api/sync/itc', async (req, res) => {
         branch:     g.branch,
         company:    g.company,
         coKey:      g.coKey,
-<<<<<<< HEAD
         itcType:    g.itcType,
-=======
-        itcType:    g.itcType,   // 'ISD' | 'Normal'
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
         taxable:    round(g.taxable),
         igst:       round(g.igst),
         cgst:       round(g.cgst),
@@ -1426,11 +924,7 @@ app.post('/api/sync/itc', async (req, res) => {
 
     const isdCount    = data.filter(r => r.itcType === 'ISD').length;
     const normalCount = data.filter(r => r.itcType === 'Normal').length;
-<<<<<<< HEAD
     console.log(`✅ ITC Books: ${data.length} bills (${skipped.length} excluded) — Normal: ${normalCount}, ISD: ${isdCount}`);
-=======
-    console.log(`✅ ITC Books: ${data.length} bills (${skipped.length} adjustment entries excluded) — Normal: ${normalCount}, ISD: ${isdCount} — from ${allLines.length} journal lines`);
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
     res.json({ ok: true, count: data.length, skipped: skipped.length, lineCount: allLines.length, data });
   } catch(e) {
     console.error('❌ ITC sync error:', e.message);
@@ -1438,7 +932,6 @@ app.post('/api/sync/itc', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // Serve the portal HTML
 const portalFile = path.join(__dirname, 'gst-audit-portal.html');
 app.get('/', (req, res) => {
@@ -1508,95 +1001,15 @@ app.listen(PORT, async () => {
   console.log(`║  GST AUDIT PORTAL  v2.1  →  port ${PORT}            ║`);
   console.log(`╠══════════════════════════════════════════════════╣`);
   console.log(`║  Storage : Firebase Firestore (chunked writes)   ║`);
-=======
-
-// ══════════════════════════════════════════════════════════════
-//  SERVER-SIDE STORAGE  — persists portal data across browsers
-//  GET  /api/storage        → returns all saved data
-//  POST /api/storage        → saves all data (full replace)
-//  POST /api/storage/merge  → merges keys into existing data
-// ══════════════════════════════════════════════════════════════
-const STORAGE_FILE = path.join(__dirname, 'gst-portal-data.json');
-
-// In-memory cache — survives requests, lost only on process restart
-let _storageCache = null;
-
-function loadStorageCache() {
-  if (_storageCache) return _storageCache;
-  try {
-    if (fs.existsSync(STORAGE_FILE)) {
-      _storageCache = JSON.parse(fs.readFileSync(STORAGE_FILE, 'utf8'));
-      console.log(`📂 Loaded portal data from disk (${Object.keys(_storageCache.keys||{}).length} keys)`);
-    }
-  } catch(e) { console.warn('Storage load error:', e.message); }
-  if (!_storageCache) _storageCache = { keys: {}, _saved: null };
-  return _storageCache;
-}
-
-function saveStorageToDisk(data) {
-  try {
-    data._saved = new Date().toISOString();
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify(data), 'utf8');
-  } catch(e) { console.warn('Storage write error:', e.message); }
-}
-
-// GET /api/storage — client calls on init to restore data
-app.get('/api/storage', (req, res) => {
-  const data = loadStorageCache();
-  res.json({ ok: true, keys: data.keys || {}, saved: data._saved });
-});
-
-// POST /api/storage — client calls on every save (full snapshot)
-app.post('/api/storage', (req, res) => {
-  const { keys } = req.body;
-  if (!keys || typeof keys !== 'object') {
-    return res.status(400).json({ ok: false, error: 'Missing keys object' });
-  }
-  _storageCache = { keys, _saved: new Date().toISOString() };
-  saveStorageToDisk(_storageCache);
-  console.log(`💾 Storage saved (${Object.keys(keys).length} keys)`);
-  res.json({ ok: true, saved: _storageCache._saved });
-});
-
-// POST /api/storage/merge — merges specific keys (partial update)
-app.post('/api/storage/merge', (req, res) => {
-  const { keys } = req.body;
-  if (!keys || typeof keys !== 'object') {
-    return res.status(400).json({ ok: false, error: 'Missing keys object' });
-  }
-  const existing = loadStorageCache();
-  Object.assign(existing.keys, keys);
-  saveStorageToDisk(existing);
-  console.log(`🔀 Storage merged (${Object.keys(keys).length} keys updated)`);
-  res.json({ ok: true, saved: existing._saved });
-});
-
-app.listen(PORT, () => {
-  const s = loadSettings();
-  console.log(`╔══════════════════════════════════════════════════╗`);
-  console.log(`║  GST AUDIT PORTAL  Proxy v1.2  →  localhost:${PORT}  ║`);
-  console.log(`╠══════════════════════════════════════════════════╣`);
-  console.log(`║  FX Fix: amount_untaxed_signed + balance field   ║`);
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   console.log(`║  POST /api/test          — test Odoo login       ║`);
   console.log(`║  POST /api/sync/sales    — sync sales invoices   ║`);
   console.log(`║  POST /api/sync/credit   — sync credit notes     ║`);
   console.log(`║  POST /api/sync/rcm      — sync RCM accounts     ║`);
   console.log(`║  POST /api/sync/itc      — sync ITC books accs   ║`);
-<<<<<<< HEAD
   console.log(`║  GET  /api/state         — load all portal state ║`);
-=======
-  console.log(`║  GET  /api/storage       — load portal data      ║`);
-  console.log(`║  POST /api/storage       — save portal data      ║`);
-  console.log(`║  GET  /                  — open portal           ║`);
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
   console.log(`╚══════════════════════════════════════════════════╝\n`);
   console.log(`  Odoo : ${s.url}`);
   console.log(`  DB   : ${s.db}`);
   console.log(`  User : ${s.username}`);
-<<<<<<< HEAD
   console.log(`\n  ➡  Open http://localhost:${PORT}/gst-audit-portal.html\n`);
-=======
-  console.log(`\n  ➡  Open http://localhost:${PORT} in your browser\n`);
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 });
