@@ -10,7 +10,7 @@
  *    2. Rename your Firebase service-account JSON → serviceAccountKey.json
  *       (or set FIREBASE_SERVICE_ACCOUNT env variable — see README)
  *    3. node gst-server.js
- *    4. Open http://localhost:3002/gst-audit-portal.html
+ *    4. Open http://localhost:3002/gst-audit-portal-v5.html
  *
  *  RENDER SETUP:
  *    Environment variable:  FIREBASE_SERVICE_ACCOUNT = <full JSON content>
@@ -933,11 +933,11 @@ app.post('/api/sync/itc', async (req, res) => {
 });
 
 // Serve the portal HTML
-const portalFile = path.join(__dirname, 'gst-audit-portal.html');
+const portalFile = path.join(__dirname, 'gst-audit-portal-v5.html');
 app.get('/', (req, res) => {
   fs.existsSync(portalFile)
     ? res.sendFile(portalFile)
-    : res.send(`<h2 style="font-family:Segoe UI;padding:40px">⚠ Place gst-audit-portal.html in this folder: ${__dirname}</h2>`);
+    : res.send(`<h2 style="font-family:Segoe UI;padding:40px">⚠ Place gst-audit-portal-v5.html in this folder: ${__dirname}</h2>`);
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -1011,5 +1011,5 @@ app.listen(PORT, async () => {
   console.log(`  Odoo : ${s.url}`);
   console.log(`  DB   : ${s.db}`);
   console.log(`  User : ${s.username}`);
-  console.log(`\n  ➡  Open http://localhost:${PORT}/gst-audit-portal.html\n`);
+  console.log(`\n  ➡  Open http://localhost:${PORT}/gst-audit-portal-v5.html\n`);
 });
