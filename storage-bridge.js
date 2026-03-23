@@ -9,7 +9,6 @@
 <<<<<<< HEAD
   const API = '/api/state';
 =======
-  const API = 'https://gst-audit-portal-1.onrender.com/api/state';
 >>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 
   const STATE_KEYS = [
@@ -85,3 +84,4 @@
     init();
   }
 })();
+
