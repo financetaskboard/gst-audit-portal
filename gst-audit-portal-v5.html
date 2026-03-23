@@ -387,14 +387,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
 
     <div class="sf">
       <div class="sf-item">📋&nbsp; Audit Log</div>
-<<<<<<< HEAD
-      <div class="sf-item">💾&nbsp; Backup Data</div>
-=======
-      <div class="sf-item" onclick="pushStorageToServer();toast('✅ Data synced to server','✅')" title="Push all data to server now">🌐&nbsp; Sync to Server</div>
-        <div class="sf-item" onclick="exportAppBackup()" title="Download all data as a .json backup file">💾&nbsp; Backup Data</div>
-        <div class="sf-item" onclick="document.getElementById('restore-backup-inp').click()" title="Restore from a backup .json file">📥&nbsp; Restore Backup</div>
-        <input type="file" id="restore-backup-inp" accept=".json" style="display:none" onchange="importAppBackup(this)"/>
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
+
       <div style="margin:6px 0;padding:6px 0;border-top:1px solid rgba(255,255,255,0.06)">
         <div id="ls-badge" style="font-size:10px;color:#8a8886;padding:2px 0 4px">Checking storage...</div>
         <div class="sf-item" onclick="clearAppState()" style="color:#d83b01;font-size:11px;cursor:pointer">🗑&nbsp; Clear All Saved Data</div>
@@ -2324,13 +2317,7 @@ function showPage(id){
   // Refresh GSTR-1 pages when navigated to
   if(id==='gstr1-upload'){loadGSTINMap();renderGSTR1History();updateG1BranchList();}
   if(id==='gstr1-view'){renderGSTR1View();}
-<<<<<<< HEAD
-  if(id==='gstr3b-upload' && typeof updateG3BBranchList==='function'){updateG3BBranchList();}
-=======
-  if(id==='gstr3b-upload'){if(typeof updateG3BBranchList==='function')updateG3BBranchList();if(typeof renderGSTR3BHistory==='function')renderGSTR3BHistory();}
-  if(id==='gstr3b-view' && typeof renderGSTR3BView==='function'){renderGSTR3BView();}
-  if(id==='rcm-view' && typeof window.renderRCMTable==='function'){window.renderRCMTable();}
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
+
 }
 function showPageSidebar(id,el){
   showPage(id);
@@ -2989,172 +2976,7 @@ function loadAppState(){
   updateStorageBadge();
 }
 
-<<<<<<< HEAD
-=======
 
-
-// ══════════════════════════════════════════════════════════════
-//  SERVER STORAGE SYNC — keeps data alive across browser sessions
-//  Works when served via the Node.js server (gst-server.js)
-// ══════════════════════════════════════════════════════════════
-var SERVER_STORAGE_ENABLED = false;  // auto-detected on init
-
-var ALL_LS_KEYS = [
-  'gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm',
-  'gst_g2b','gst_itc','gst_isd',
-  'gst_audit_portal_v1','gst_audit_portal_v1_ext','gst_audit_portal_v1_g2b',
-  'gst_audit_3b_v1','gst_audit_rcm_v1',
-  'gst_audit_core_v2','gst_audit_sync_v2'
-];
-
-// Detect if running via Node server (not file://)
-function _serverBase() {
-  var p = window.location.protocol;
-  if (p === 'file:') return null;
-  return window.location.origin;  // e.g. https://gst-audit-portal.onrender.com
-}
-
-// Push all localStorage keys to server
-function pushStorageToServer() {
-  var base = _serverBase();
-  if (!base) return;
-  var keys = {};
-  ALL_LS_KEYS.forEach(function(k) {
-    var v = localStorage.getItem(k);
-    if (v !== null) keys[k] = v;
-  });
-  if (!Object.keys(keys).length) return;
-  fetch(base + '/api/storage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ keys: keys })
-  }).catch(function(){});  // silent — don't interrupt user flow
-}
-
-// Pull data from server into localStorage (called on init)
-function pullStorageFromServer(callback) {
-  var base = _serverBase();
-  if (!base) { if (callback) callback(false); return; }
-  fetch(base + '/api/storage')
-    .then(function(r) { return r.json(); })
-    .then(function(resp) {
-      if (!resp.ok || !resp.keys) { if (callback) callback(false); return; }
-      var count = 0;
-      Object.keys(resp.keys).forEach(function(k) {
-        // Only restore if localStorage doesn't already have this key
-        // (local data wins — user may have newer local edits)
-        if (localStorage.getItem(k) === null && resp.keys[k]) {
-          localStorage.setItem(k, resp.keys[k]);
-          count++;
-        }
-      });
-      SERVER_STORAGE_ENABLED = true;
-      if (count > 0) {
-        console.log('🌐 Restored ' + count + ' keys from server storage');
-        toast('🌐 Data restored from server (' + count + ' keys loaded)', '🌐');
-      } else {
-        console.log('🌐 Server storage connected — data already current');
-      }
-      if (callback) callback(true);
-    })
-    .catch(function() { if (callback) callback(false); });
-}
-
-// Override saveAppState to also push to server
-var _origSaveAppState = window.saveAppState;
-window.saveAppState = function() {
-  if (typeof _origSaveAppState === 'function') _origSaveAppState();
-  pushStorageToServer();
-};
-
-// Also override exportAppBackup to offer server-based restore info
-var _origExportBackup = window.exportAppBackup;
-window.exportAppBackup = function() {
-  if (typeof _origExportBackup === 'function') _origExportBackup();
-  // Also push to server at backup time
-  pushStorageToServer();
-};
-
-// On init: pull from server first, then load APP state
-(function initServerSync() {
-  pullStorageFromServer(function(restored) {
-    // Always call loadAppState after pull attempt — ensures APP is populated
-    if (typeof loadAppState === 'function') {
-      try { loadAppState(); } catch(e) {}
-    }
-    // Update status bar if server storage is live
-    if (restored || SERVER_STORAGE_ENABLED) {
-      var statusBar = document.querySelector('.status-bar') || document.getElementById('status-bar');
-      // Update the server-sync indicator in the bottom bar
-      var syncDot = document.querySelector('.sdot');
-      if (syncDot) {
-        // Add server storage indicator
-        var bar = syncDot.closest('div') || syncDot.parentElement;
-        if (bar && !bar.querySelector('#srv-sync-dot')) {
-          bar.insertAdjacentHTML('afterbegin', 
-            '<span id="srv-sync-dot" style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">' +
-            '<span style="width:8px;height:8px;border-radius:50%;background:#0078d4;display:inline-block"></span>' +
-            '<span style="color:rgba(255,255,255,0.6);font-size:11px">Server Sync: Active</span></span>'
-          );
-        }
-      }
-    }
-  });
-})();
-
-// ══════════════════════════════════════════════════════════════
-//  BACKUP EXPORT & RESTORE  — migrate data between devices/domains
-// ══════════════════════════════════════════════════════════════
-function exportAppBackup() {
-  var ALL_KEYS = [
-    'gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm',
-    'gst_g2b','gst_itc','gst_isd',
-    'gst_audit_portal_v1','gst_audit_portal_v1_ext','gst_audit_portal_v1_g2b',
-    'gst_audit_3b_v1','gst_audit_rcm_v1',
-    'gst_audit_core_v2','gst_audit_sync_v2'
-  ];
-  var backup = { _version: 'gst_backup_v1', _exported: new Date().toISOString(), keys: {} };
-  var found = 0;
-  ALL_KEYS.forEach(function(k) {
-    var v = localStorage.getItem(k);
-    if (v !== null) { backup.keys[k] = v; found++; }
-  });
-  if (!found) { toast('No saved data found to export','⚠️'); return; }
-  var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  var d = new Date(); 
-  a.download = 'gst-audit-backup-' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('✅ Backup exported (' + found + ' data keys) — open this file on the other device and use Restore Backup','✅');
-}
-
-function importAppBackup(input) {
-  var file = input.files[0];
-  if (!file) return;
-  input.value = '';
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var backup = JSON.parse(e.target.result);
-      if (!backup || !backup.keys || backup._version !== 'gst_backup_v1') {
-        toast('❌ Invalid backup file — must be a file exported from GST Audit Portal','❌'); return;
-      }
-      var count = 0;
-      Object.keys(backup.keys).forEach(function(k) {
-        try { localStorage.setItem(k, backup.keys[k]); count++; } catch(err) {}
-      });
-      toast('✅ Restored ' + count + ' data keys — reloading…','✅');
-      setTimeout(function(){ location.reload(); }, 1200);
-    } catch(err) {
-      toast('❌ Could not read backup file: ' + err.message, '❌');
-    }
-  };
-  reader.readAsText(file);
-}
-
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 function clearAppState(){
   if (!confirm('⚠️ This will clear ALL saved data (Sales, Credit Notes, GSTR-1, GSTR-3B, RCM).\n\nAre you sure?')) return;
   ['gst_audit_portal_v1','gst_audit_portal_v1_ext','gst_audit_portal_v1_g2b','gst_audit_3b_v1','gst_audit_rcm_v1',
@@ -6218,46 +6040,18 @@ loadGstr3bState();
         var dp = r.billDate.split('-');
         dispDate = dp[2]+'-'+(MON[parseInt(dp[1],10)]||dp[1])+'-'+dp[0];
       }
-<<<<<<< HEAD
-      rows += '<tr>'
-        + '<td class="left" style="color:var(--muted);font-size:11px;padding:7px 6px 7px 10px">'+(i+1)+'</td>'
-        + '<td class="left"><strong>'+(r.moveNo||'\u2014')+'</strong></td>'
-=======
-      var isCN = r.isRefund || (r.igst < 0 || r.cgst < 0 || r.sgst < 0 || r.taxable < 0);
-      var rowStyle = isCN ? ' style="background:#fff8f7;"' : '';
-      var cnBadge  = isCN ? '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">CN</span>' : '';
-      var numStyle = isCN ? 'color:#d83b01;font-weight:600' : '';
-      rows += '<tr'+rowStyle+'>'
-        + '<td class="left" style="color:var(--muted);font-size:11px;padding:7px 6px 7px 10px">'+(i+1)+'</td>'
-        + '<td class="left"><strong>'+(r.moveNo||'\u2014')+'</strong>'+cnBadge+'</td>'
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
+
         + '<td class="left" style="white-space:nowrap;font-variant-numeric:tabular-nums">'+dispDate+'</td>'
         + '<td class="left" style="font-family:monospace;font-size:11.5px;color:var(--accent)">'+(r.refNo||'\u2014')+'</td>'
         + '<td class="left" style="font-weight:600;max-width:180px">'+(r.vendorName||'\u2014')+'</td>'
         + '<td class="left"><span class="tag tag-branch">'+(r.branch||'\u2014')+'</span></td>'
         + '<td class="left" style="font-size:11px;color:var(--muted)">'+(r.company||'\u2014')+'</td>'
-<<<<<<< HEAD
-        + '<td>'+pINR(r.taxable||0)+'</td>'
-        + '<td>'+pINR(r.igst||0)+'</td>'
-        + '<td>'+pINR(r.cgst||0)+'</td>'
-        + '<td>'+pINR(r.sgst||0)+'</td>'
-=======
-        + '<td style="'+numStyle+'">'+pINR(r.taxable||0)+'</td>'
-        + '<td style="'+numStyle+'">'+pINR(r.igst||0)+'</td>'
-        + '<td style="'+numStyle+'">'+pINR(r.cgst||0)+'</td>'
-        + '<td style="'+numStyle+'">'+pINR(r.sgst||0)+'</td>'
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
+
         + '<td class="left">'+g2bTag(r.refNo)+'</td>'
         + '</tr>';
     });
     rows += '<tr class="total-row">'
-<<<<<<< HEAD
-      + '<td class="left" colspan="7">TOTAL ('+filtered.length+' bills)</td>'
-=======
-      + (function(){var cns=filtered.filter(function(r){return r.isRefund||(r.igst<0||r.cgst<0||r.sgst<0||r.taxable<0);}).length;
-         var bills=filtered.length-cns;
-         return '<td class="left" colspan="7">TOTAL &nbsp;<span style="font-weight:400;color:var(--muted)">'+bills+' bills'+(cns?' &minus; '+cns+' credit notes':'')+'</span></td>';}())
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
+
       + '<td>'+pINR(rTot.taxable)+'</td>'
       + '<td>'+pINR(rTot.igst)+'</td>'
       + '<td>'+pINR(rTot.cgst)+'</td>'
@@ -6355,10 +6149,7 @@ loadGstr3bState();
     if (badge) badge.style.display = 'none';
     toast('ITC data cleared','🗑');
   };
-<<<<<<< HEAD
-=======
-  injectPages();        // 2190 FIX: inject GSTR-3B & RCM pages into DOM
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
+
   injectGSTR2BPages();
   injectSidebarNav();
   injectDatabarTabs();
@@ -8456,11 +8247,5 @@ setTimeout(function() {
 
 })();
 </script>
-<<<<<<< HEAD
-<script src="storage-bridge.js"></script>
 
-</body>
-=======
 
-</body>
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
