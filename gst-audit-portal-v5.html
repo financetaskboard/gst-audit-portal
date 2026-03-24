@@ -1677,7 +1677,7 @@ function saveConfig(){
 }
 
 // ── LOCAL PROXY CONFIG (mirrors MSME portal pattern) ──────────
-const PROXY = 'http://localhost:3002';
+const PROXY = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3002' : '';
 
 async function checkProxy(){
   try{
@@ -1731,7 +1731,8 @@ async function runSync(){
   setModalStatus('info','🔄 Checking proxy server...');
   const proxyOk = await checkProxy();
   if(!proxyOk){
-    setModalStatus('error','❌ Proxy server offline!<br><br>📋 <strong>Steps to fix:</strong><br>1. Open Command Prompt / Terminal<br>2. Go to folder: <code>cd C:\\Users\\gines\\Downloads</code><br>3. Run: <code>npm install express cors node-fetch</code><br>4. Run: <code>node gst-server.js</code><br>5. Click Sync Now again');
+    const _isLocal = location.hostname==='localhost'||location.hostname==='127.0.0.1';
+    setModalStatus('error', _isLocal ? '❌ Proxy server offline!<br><br>📋 <strong>Steps to fix:</strong><br>1. Open Command Prompt / Terminal<br>2. Go to folder: <code>cd C:\\Users\\gines\\Downloads</code><br>3. Run: <code>npm install express cors node-fetch</code><br>4. Run: <code>node gst-server.js</code><br>5. Click Sync Now again' : '❌ Server not responding.<br><br>📋 <strong>Steps to fix:</strong><br>1. Wait 30 sec — Render may be waking up<br>2. Refresh the page and try again<br>3. Check your Render dashboard logs');
     return;
   }
 
