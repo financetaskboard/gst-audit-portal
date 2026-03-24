@@ -387,7 +387,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
 
     <div class="sf">
       <div class="sf-item">📋&nbsp; Audit Log</div>
-      <div class="sf-item" onclick="pushStorageToServer();toast('✅ Data pushed to server','✅')" title="Push all data to server now">🔼&nbsp; Push to Server</div>
+      <div class="sf-item" onclick="saveAppState();pushStorageToServer();toast('✅ Data pushed to server','✅')" title="Save & push all data to server now">🔼&nbsp; Push to Server</div>
       <div class="sf-item" onclick="forcePullFromServer()" title="Pull latest data from Firebase server">🔽&nbsp; Pull from Server</div>
         <div class="sf-item" onclick="exportAppBackup()" title="Download all data as a .json backup file">💾&nbsp; Backup Data</div>
         <div class="sf-item" onclick="document.getElementById('restore-backup-inp').click()" title="Restore from a backup .json file">📥&nbsp; Restore Backup</div>
@@ -1680,7 +1680,7 @@ function saveConfig(){
 // ── PROXY CONFIG — auto-detects Render vs local ─────────────
 const PROXY = (window.location.protocol === 'file:')
   ? 'http://localhost:3002'
-  : window.location.origin;   // works on Render, localhost, any host
+  : window.location.origin;
 
 async function checkProxy(){
   try{
@@ -1739,7 +1739,7 @@ async function runSync(){
   if(!proxyOk){
     var isRender = window.location.hostname.includes('onrender.com');
     if (isRender) {
-      setModalStatus('error','❌ Server not responding. Please check if your Render service is running at<br><code>' + window.location.origin + '</code><br>Try refreshing the page.');
+      setModalStatus('error','❌ Server not responding. Try refreshing the page or check your Render dashboard.');
     } else {
       setModalStatus('error','❌ Proxy server offline!<br><br>📋 <strong>Steps to fix:</strong><br>1. Open Command Prompt / Terminal<br>2. Go to your project folder<br>3. Run: <code>npm install</code><br>4. Run: <code>node gst-server.js</code><br>5. Click Sync Now again');
     }
@@ -3019,6 +3019,8 @@ function _serverBase() {
 function pushStorageToServer() {
   var base = _serverBase();
   if (!base) return;
+  // First consolidate: ensure legacy keys are written to primary keys
+  try { if (typeof saveGstr3bState === 'function') saveGstr3bState(); } catch(e) {}
   ALL_LS_KEYS.forEach(function(k) {
     var v = localStorage.getItem(k);
     if (v === null) return;
@@ -3033,10 +3035,11 @@ function pushStorageToServer() {
   });
 }
 
-// Force-pull: always overwrite local with server data (manual button)
+// Force-pull: always overwrite local with server data (manual Pull button)
 function forcePullFromServer(callback) {
   var base = _serverBase();
   if (!base) { toast('⚠️ Not running on server','⚠️'); if (callback) callback(false); return; }
+  toast('🔄 Pulling data from server...','🔄');
   fetch(base + '/api/state')
     .then(function(r) { return r.json(); })
     .then(function(resp) {
@@ -3051,10 +3054,19 @@ function forcePullFromServer(callback) {
         }
       });
       if (count > 0) {
-        loadAppState();
+        // Reload ALL app state from localStorage
+        try { loadAppState(); } catch(e){}
+        try { if(typeof loadGstr3bState==='function') loadGstr3bState(); } catch(e){}
+        // Re-render everything
         try { buildSales(APP.salesData||[]); } catch(e){}
         try { buildCredit(APP.creditData||[]); } catch(e){}
         try { renderGSTR1History(); } catch(e){}
+        try { renderGSTR1View(); } catch(e){}
+        try { updateGSTR1StatusBar(); } catch(e){}
+        try { if(typeof window.renderGSTR3BHistory==='function') window.renderGSTR3BHistory(); } catch(e){}
+        try { if(typeof window.renderGSTR3BView==='function') window.renderGSTR3BView(); } catch(e){}
+        try { if(typeof window.renderRCMTable==='function') window.renderRCMTable(); } catch(e){}
+        try { if(typeof window.renderITCTable==='function') window.renderITCTable(); } catch(e){}
         try { updateStorageBadge(); } catch(e){}
         toast('✅ Loaded ' + count + ' keys from server','✅');
       }
@@ -3067,6 +3079,14 @@ function forcePullFromServer(callback) {
 function pullStorageFromServer(callback, silent) {
   var base = _serverBase();
   if (!base) { if (callback) callback(false); return; }
+  // Skip pull if backup was just restored (flag set by importAppBackup)
+  if (sessionStorage.getItem('_backup_just_restored')) {
+    sessionStorage.removeItem('_backup_just_restored');
+    console.log('🌐 Skipping pull — backup just restored');
+    SERVER_STORAGE_ENABLED = true;
+    if (callback) callback(false);
+    return;
+  }
   fetch(base + '/api/state')
     .then(function(r) { return r.json(); })
     .then(function(resp) {
@@ -3076,7 +3096,7 @@ function pullStorageFromServer(callback, silent) {
       var localCfgRaw = localStorage.getItem('gst_cfg');
       var serverIsNewer = false;
 
-      // Check if local has any real data (sales/credit)
+      // Check if local has any real data
       var localHasData = false;
       try {
         var ls = localStorage.getItem('gst_sales');
@@ -3084,8 +3104,14 @@ function pullStorageFromServer(callback, silent) {
       } catch(e) {}
       if (!localHasData) {
         try {
-          var lc = localStorage.getItem('gst_credit');
-          if (lc) { var arr2 = JSON.parse(lc); if (Array.isArray(arr2) && arr2.length > 0) localHasData = true; }
+          var lg = localStorage.getItem('gst_g1');
+          if (lg) { var arr2 = JSON.parse(lg); if (Array.isArray(arr2) && arr2.length > 0) localHasData = true; }
+        } catch(e) {}
+      }
+      if (!localHasData) {
+        try {
+          var l3 = localStorage.getItem('gst_3b');
+          if (l3) { var arr3 = JSON.parse(l3); if (Array.isArray(arr3) && arr3.length > 0) localHasData = true; }
         } catch(e) {}
       }
 
@@ -3101,10 +3127,19 @@ function pullStorageFromServer(callback, silent) {
       // If local has no real data, always accept server data
       if (!localHasData) serverIsNewer = true;
 
+      // For each server key: only overwrite if server is newer OR local key is missing
+      // But NEVER overwrite a non-empty local array with an empty server array
       Object.keys(resp.state).forEach(function(k) {
-        if (resp.state[k] !== undefined && (serverIsNewer || localStorage.getItem(k) === null)) {
+        if (resp.state[k] === undefined) return;
+        var localVal = localStorage.getItem(k);
+        var serverVal = resp.state[k];
+        // Skip if server has empty array but local has data
+        if (Array.isArray(serverVal) && serverVal.length === 0 && localVal) {
+          try { var la = JSON.parse(localVal); if (Array.isArray(la) && la.length > 0) return; } catch(e){}
+        }
+        if (serverIsNewer || localVal === null) {
           try {
-            localStorage.setItem(k, JSON.stringify(resp.state[k]));
+            localStorage.setItem(k, JSON.stringify(serverVal));
             count++;
           } catch(e) {}
         }
@@ -3128,7 +3163,7 @@ window.saveAppState = function() {
   pushStorageToServer();
 };
 
-// Also override exportAppBackup to offer server-based restore info
+// Also override exportAppBackup to push to server at backup time
 var _origExportBackup = window.exportAppBackup;
 window.exportAppBackup = function() {
   if (typeof _origExportBackup === 'function') _origExportBackup();
@@ -3162,10 +3197,10 @@ window.exportAppBackup = function() {
     pullStorageFromServer(function(updated) {
       if (updated) {
         if (typeof loadAppState === 'function') { try { loadAppState(); } catch(e) {} }
+        try { if(typeof loadGstr3bState==='function') loadGstr3bState(); } catch(e){}
         try { if(typeof buildSales==='function') buildSales(APP.salesData||[]); } catch(e){}
         try { if(typeof buildCredit==='function') buildCredit(APP.creditData||[]); } catch(e){}
         try { if(typeof renderGSTR1History==='function') renderGSTR1History(); } catch(e){}
-        try { if(typeof renderGSTR1View==='function') renderGSTR1View(); } catch(e){}
         try { if(typeof window.renderGSTR3BHistory==='function') window.renderGSTR3BHistory(); } catch(e){}
         try { if(typeof window.renderRCMTable==='function') window.renderRCMTable(); } catch(e){}
         try { updateStorageBadge(); } catch(e){}
@@ -3179,6 +3214,8 @@ window.exportAppBackup = function() {
 //  BACKUP EXPORT & RESTORE  — migrate data between devices/domains
 // ══════════════════════════════════════════════════════════════
 function exportAppBackup() {
+  // Consolidate all data to primary keys first
+  try { if (typeof saveGstr3bState === 'function') saveGstr3bState(); } catch(e) {}
   var ALL_KEYS = [
     'gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm',
     'gst_g2b','gst_itc','gst_isd',
@@ -3218,8 +3255,33 @@ function importAppBackup(input) {
       Object.keys(backup.keys).forEach(function(k) {
         try { localStorage.setItem(k, backup.keys[k]); count++; } catch(err) {}
       });
-      toast('✅ Restored ' + count + ' data keys — reloading…','✅');
-      setTimeout(function(){ location.reload(); }, 1200);
+      // Set flag so pullStorageFromServer skips on reload (prevent overwrite)
+      try { sessionStorage.setItem('_backup_just_restored', '1'); } catch(e) {}
+      // Push restored data to Firebase so teammates can pull it
+      var base = _serverBase();
+      if (base) {
+        toast('✅ Restored ' + count + ' keys — pushing to server & reloading…','✅');
+        // Push each key to Firebase before reloading
+        var pushKeys = ['gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm','gst_g2b','gst_itc','gst_isd'];
+        var promises = pushKeys.map(function(k) {
+          var v = localStorage.getItem(k);
+          if (!v) return Promise.resolve();
+          try {
+            var parsed = JSON.parse(v);
+            return fetch(base + '/api/state/' + encodeURIComponent(k), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ value: parsed })
+            }).catch(function(){});
+          } catch(e) { return Promise.resolve(); }
+        });
+        Promise.all(promises).then(function() {
+          setTimeout(function(){ location.reload(); }, 500);
+        });
+      } else {
+        toast('✅ Restored ' + count + ' data keys — reloading…','✅');
+        setTimeout(function(){ location.reload(); }, 1200);
+      }
     } catch(err) {
       toast('❌ Could not read backup file: ' + err.message, '❌');
     }
