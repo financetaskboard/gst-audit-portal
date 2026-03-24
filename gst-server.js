@@ -947,7 +947,7 @@ app.get('/', (req, res) => {
 //  POST   /api/state/:key    — save one key (chunked if large)
 //  DELETE /api/state         — wipe all state
 // ══════════════════════════════════════════════════════════════
-const STATE_KEYS = ['gst_cfg','gst_g1','gst_3b','gst_rcm','gst_sales','gst_credit','gst_g2b','gst_itc','gst_isd'];
+const STATE_KEYS = ['gst_cfg','gst_g1','gst_3b','gst_rcm','gst_sales','gst_credit','gst_g2b','gst_itc','gst_isd','gst_audit_3b_v1','gst_audit_rcm_v1'];
 
 // GET /api/state — load all keys at once
 app.get('/api/state', async (req, res) => {
