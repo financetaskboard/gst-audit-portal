@@ -1,15 +1,12 @@
 /**
- * GST Audit Portal — Storage Bridge v2.0
+ * GST Audit Portal — Storage Bridge v2.1
  * Syncs all app state to Firebase via the Express server.
  * Uses relative URLs so it works both locally and on Render.com.
  */
 (function () {
   'use strict';
 
-<<<<<<< HEAD
   const API = '/api/state';
-=======
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 
   const STATE_KEYS = [
     'gst_cfg', 'gst_g1', 'gst_3b', 'gst_rcm',
@@ -84,14 +81,3 @@
     init();
   }
 })();
-
-
-// Auto-load from server on page open
-document.addEventListener('DOMContentLoaded', function() {
-  fetch('/api/state').then(r=>r.json()).then(d=>{
-    if(d.state && localStorage.length < 5) {
-      Object.keys(d.state).forEach(k => localStorage.setItem(k, JSON.stringify(d.state[k])));
-      location.reload();
-    }
-  }).catch(()=>{});
-});
