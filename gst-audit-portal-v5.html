@@ -387,7 +387,8 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
 
     <div class="sf">
       <div class="sf-item">📋&nbsp; Audit Log</div>
-      <div class="sf-item" onclick="pushStorageToServer();toast('✅ Data synced to server','✅')" title="Push all data to server now">🌐&nbsp; Sync to Server</div>
+      <div class="sf-item" onclick="pushStorageToServer();toast('✅ Data pushed to server','✅')" title="Push all data to server now">🔼&nbsp; Push to Server</div>
+      <div class="sf-item" onclick="forcePullFromServer()" title="Pull latest data from Firebase server">🔽&nbsp; Pull from Server</div>
         <div class="sf-item" onclick="exportAppBackup()" title="Download all data as a .json backup file">💾&nbsp; Backup Data</div>
         <div class="sf-item" onclick="document.getElementById('restore-backup-inp').click()" title="Restore from a backup .json file">📥&nbsp; Restore Backup</div>
         <input type="file" id="restore-backup-inp" accept=".json" style="display:none" onchange="importAppBackup(this)"/>
@@ -1676,8 +1677,10 @@ function saveConfig(){
   saveAppState();
 }
 
-// ── LOCAL PROXY CONFIG (mirrors MSME portal pattern) ──────────
-const PROXY = 'http://localhost:3002';
+// ── PROXY CONFIG — auto-detects Render vs local ─────────────
+const PROXY = (window.location.protocol === 'file:')
+  ? 'http://localhost:3002'
+  : window.location.origin;   // works on Render, localhost, any host
 
 async function checkProxy(){
   try{
@@ -1706,7 +1709,10 @@ async function testConnection(){
   setModalStatus('info','🔌 Checking proxy server...');
   const proxyOk = await checkProxy();
   if(!proxyOk){
-    setModalStatus('error','❌ Proxy server offline.<br><strong>Run: node gst-server.js</strong> in the folder where you saved the files.');
+    var isRender = window.location.hostname.includes('onrender.com');
+    setModalStatus('error', isRender
+      ? '❌ Server not responding. Try refreshing the page or check your Render dashboard.'
+      : '❌ Proxy server offline.<br><strong>Run: node gst-server.js</strong> in your project folder.');
     return;
   }
   setModalStatus('info','🔌 Testing Odoo connection...');
@@ -1731,7 +1737,12 @@ async function runSync(){
   setModalStatus('info','🔄 Checking proxy server...');
   const proxyOk = await checkProxy();
   if(!proxyOk){
-    setModalStatus('error','❌ Proxy server offline!<br><br>📋 <strong>Steps to fix:</strong><br>1. Open Command Prompt / Terminal<br>2. Go to folder: <code>cd C:\\Users\\gines\\Downloads</code><br>3. Run: <code>npm install express cors node-fetch</code><br>4. Run: <code>node gst-server.js</code><br>5. Click Sync Now again');
+    var isRender = window.location.hostname.includes('onrender.com');
+    if (isRender) {
+      setModalStatus('error','❌ Server not responding. Please check if your Render service is running at<br><code>' + window.location.origin + '</code><br>Try refreshing the page.');
+    } else {
+      setModalStatus('error','❌ Proxy server offline!<br><br>📋 <strong>Steps to fix:</strong><br>1. Open Command Prompt / Terminal<br>2. Go to your project folder<br>3. Run: <code>npm install</code><br>4. Run: <code>node gst-server.js</code><br>5. Click Sync Now again');
+    }
     return;
   }
 
@@ -3022,6 +3033,36 @@ function pushStorageToServer() {
   });
 }
 
+// Force-pull: always overwrite local with server data (manual button)
+function forcePullFromServer(callback) {
+  var base = _serverBase();
+  if (!base) { toast('⚠️ Not running on server','⚠️'); if (callback) callback(false); return; }
+  fetch(base + '/api/state')
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+      if (!resp.ok || !resp.state || !Object.keys(resp.state).length) {
+        toast('⚠️ No data found on server','⚠️');
+        if (callback) callback(false); return;
+      }
+      var count = 0;
+      Object.keys(resp.state).forEach(function(k) {
+        if (resp.state[k] !== undefined) {
+          try { localStorage.setItem(k, JSON.stringify(resp.state[k])); count++; } catch(e) {}
+        }
+      });
+      if (count > 0) {
+        loadAppState();
+        try { buildSales(APP.salesData||[]); } catch(e){}
+        try { buildCredit(APP.creditData||[]); } catch(e){}
+        try { renderGSTR1History(); } catch(e){}
+        try { updateStorageBadge(); } catch(e){}
+        toast('✅ Loaded ' + count + ' keys from server','✅');
+      }
+      if (callback) callback(count > 0);
+    })
+    .catch(function(e) { toast('❌ Server fetch failed: ' + e.message,'❌'); if (callback) callback(false); });
+}
+
 // Pull data from server into localStorage (called on init and by polling)
 function pullStorageFromServer(callback, silent) {
   var base = _serverBase();
@@ -3031,10 +3072,23 @@ function pullStorageFromServer(callback, silent) {
     .then(function(resp) {
       if (!resp.ok || !resp.state) { if (callback) callback(false); return; }
       var count = 0;
-      // Compare server savedAt vs local savedAt — server wins if newer
       var serverCfg = resp.state['gst_cfg'];
       var localCfgRaw = localStorage.getItem('gst_cfg');
       var serverIsNewer = false;
+
+      // Check if local has any real data (sales/credit)
+      var localHasData = false;
+      try {
+        var ls = localStorage.getItem('gst_sales');
+        if (ls) { var arr = JSON.parse(ls); if (Array.isArray(arr) && arr.length > 0) localHasData = true; }
+      } catch(e) {}
+      if (!localHasData) {
+        try {
+          var lc = localStorage.getItem('gst_credit');
+          if (lc) { var arr2 = JSON.parse(lc); if (Array.isArray(arr2) && arr2.length > 0) localHasData = true; }
+        } catch(e) {}
+      }
+
       try {
         if (serverCfg && localCfgRaw) {
           var localCfg = JSON.parse(localCfgRaw);
@@ -3044,8 +3098,10 @@ function pullStorageFromServer(callback, silent) {
         }
       } catch(e) {}
 
+      // If local has no real data, always accept server data
+      if (!localHasData) serverIsNewer = true;
+
       Object.keys(resp.state).forEach(function(k) {
-        // Restore if: key missing locally OR server has newer data
         if (resp.state[k] !== undefined && (serverIsNewer || localStorage.getItem(k) === null)) {
           try {
             localStorage.setItem(k, JSON.stringify(resp.state[k]));
@@ -3076,24 +3132,18 @@ window.saveAppState = function() {
 var _origExportBackup = window.exportAppBackup;
 window.exportAppBackup = function() {
   if (typeof _origExportBackup === 'function') _origExportBackup();
-  // Also push to server at backup time
   pushStorageToServer();
 };
 
 // On init: pull from server first, then load APP state
 (function initServerSync() {
   pullStorageFromServer(function(restored) {
-    // Always call loadAppState after pull attempt — ensures APP is populated
     if (typeof loadAppState === 'function') {
       try { loadAppState(); } catch(e) {}
     }
-    // Update status bar if server storage is live
     if (restored || SERVER_STORAGE_ENABLED) {
-      var statusBar = document.querySelector('.status-bar') || document.getElementById('status-bar');
-      // Update the server-sync indicator in the bottom bar
       var syncDot = document.querySelector('.sdot');
       if (syncDot) {
-        // Add server storage indicator
         var bar = syncDot.closest('div') || syncDot.parentElement;
         if (bar && !bar.querySelector('#srv-sync-dot')) {
           bar.insertAdjacentHTML('afterbegin', 
@@ -3106,16 +3156,12 @@ window.exportAppBackup = function() {
     }
   });
 
-  // ── Polling: check server for newer data every 30 seconds ──
+  // Polling: check server for newer data every 30 seconds
   setInterval(function() {
     if (!SERVER_STORAGE_ENABLED) return;
     pullStorageFromServer(function(updated) {
       if (updated) {
-        // Reload app state from localStorage (now has server data)
-        if (typeof loadAppState === 'function') {
-          try { loadAppState(); } catch(e) {}
-        }
-        // Re-render visible tables
+        if (typeof loadAppState === 'function') { try { loadAppState(); } catch(e) {} }
         try { if(typeof buildSales==='function') buildSales(APP.salesData||[]); } catch(e){}
         try { if(typeof buildCredit==='function') buildCredit(APP.creditData||[]); } catch(e){}
         try { if(typeof renderGSTR1History==='function') renderGSTR1History(); } catch(e){}
@@ -3125,7 +3171,7 @@ window.exportAppBackup = function() {
         try { updateStorageBadge(); } catch(e){}
         console.log('🔄 UI refreshed with server data');
       }
-    }, true); // silent=true to avoid spamming toasts
+    }, true);
   }, 30000);
 })();
 
