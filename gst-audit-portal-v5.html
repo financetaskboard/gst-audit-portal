@@ -1677,7 +1677,7 @@ function saveConfig(){
 }
 
 // ── LOCAL PROXY CONFIG (mirrors MSME portal pattern) ──────────
-const PROXY = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3002' : '';
+const PROXY = 'http://localhost:3002';
 
 async function checkProxy(){
   try{
@@ -1731,8 +1731,7 @@ async function runSync(){
   setModalStatus('info','🔄 Checking proxy server...');
   const proxyOk = await checkProxy();
   if(!proxyOk){
-    const _isLocal = location.hostname==='localhost'||location.hostname==='127.0.0.1';
-    setModalStatus('error', _isLocal ? '❌ Proxy server offline!<br><br>📋 <strong>Steps to fix:</strong><br>1. Open Command Prompt / Terminal<br>2. Go to folder: <code>cd C:\\Users\\gines\\Downloads</code><br>3. Run: <code>npm install express cors node-fetch</code><br>4. Run: <code>node gst-server.js</code><br>5. Click Sync Now again' : '❌ Server not responding.<br><br>📋 <strong>Steps to fix:</strong><br>1. Wait 30 sec — Render may be waking up<br>2. Refresh the page and try again<br>3. Check your Render dashboard logs');
+    setModalStatus('error','❌ Proxy server offline!<br><br>📋 <strong>Steps to fix:</strong><br>1. Open Command Prompt / Terminal<br>2. Go to folder: <code>cd C:\\Users\\gines\\Downloads</code><br>3. Run: <code>npm install express cors node-fetch</code><br>4. Run: <code>node gst-server.js</code><br>5. Click Sync Now again');
     return;
   }
 
@@ -3005,48 +3004,63 @@ function _serverBase() {
   return window.location.origin;  // e.g. https://gst-audit-portal.onrender.com
 }
 
-// Push all localStorage keys to server
+// Push all localStorage keys to server (uses /api/state/:key per key)
 function pushStorageToServer() {
   var base = _serverBase();
   if (!base) return;
-  var keys = {};
   ALL_LS_KEYS.forEach(function(k) {
     var v = localStorage.getItem(k);
-    if (v !== null) keys[k] = v;
+    if (v === null) return;
+    try {
+      var parsed = JSON.parse(v);
+      fetch(base + '/api/state/' + encodeURIComponent(k), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: parsed })
+      }).catch(function(){});
+    } catch(e) {}
   });
-  if (!Object.keys(keys).length) return;
-  fetch(base + '/api/storage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ keys: keys })
-  }).catch(function(){});  // silent — don't interrupt user flow
 }
 
-// Pull data from server into localStorage (called on init)
-function pullStorageFromServer(callback) {
+// Pull data from server into localStorage (called on init and by polling)
+function pullStorageFromServer(callback, silent) {
   var base = _serverBase();
   if (!base) { if (callback) callback(false); return; }
-  fetch(base + '/api/storage')
+  fetch(base + '/api/state')
     .then(function(r) { return r.json(); })
     .then(function(resp) {
-      if (!resp.ok || !resp.keys) { if (callback) callback(false); return; }
+      if (!resp.ok || !resp.state) { if (callback) callback(false); return; }
       var count = 0;
-      Object.keys(resp.keys).forEach(function(k) {
-        // Only restore if localStorage doesn't already have this key
-        // (local data wins — user may have newer local edits)
-        if (localStorage.getItem(k) === null && resp.keys[k]) {
-          localStorage.setItem(k, resp.keys[k]);
-          count++;
+      // Compare server savedAt vs local savedAt — server wins if newer
+      var serverCfg = resp.state['gst_cfg'];
+      var localCfgRaw = localStorage.getItem('gst_cfg');
+      var serverIsNewer = false;
+      try {
+        if (serverCfg && localCfgRaw) {
+          var localCfg = JSON.parse(localCfgRaw);
+          serverIsNewer = new Date(serverCfg.savedAt || 0) > new Date(localCfg.savedAt || 0);
+        } else if (serverCfg && !localCfgRaw) {
+          serverIsNewer = true;
+        }
+      } catch(e) {}
+
+      Object.keys(resp.state).forEach(function(k) {
+        // Restore if: key missing locally OR server has newer data
+        if (resp.state[k] !== undefined && (serverIsNewer || localStorage.getItem(k) === null)) {
+          try {
+            localStorage.setItem(k, JSON.stringify(resp.state[k]));
+            count++;
+          } catch(e) {}
         }
       });
       SERVER_STORAGE_ENABLED = true;
       if (count > 0) {
-        console.log('🌐 Restored ' + count + ' keys from server storage');
-        toast('🌐 Data restored from server (' + count + ' keys loaded)', '🌐');
+        console.log('🌐 Synced ' + count + ' keys from server' + (serverIsNewer ? ' (server newer)' : ' (missing keys)'));
+        if (!silent) toast('🌐 Data synced from server (' + count + ' keys)', '🌐');
       } else {
         console.log('🌐 Server storage connected — data already current');
       }
-      if (callback) callback(true);
+      if (callback) callback(count > 0);
     })
     .catch(function() { if (callback) callback(false); });
 }
@@ -3091,6 +3105,28 @@ window.exportAppBackup = function() {
       }
     }
   });
+
+  // ── Polling: check server for newer data every 30 seconds ──
+  setInterval(function() {
+    if (!SERVER_STORAGE_ENABLED) return;
+    pullStorageFromServer(function(updated) {
+      if (updated) {
+        // Reload app state from localStorage (now has server data)
+        if (typeof loadAppState === 'function') {
+          try { loadAppState(); } catch(e) {}
+        }
+        // Re-render visible tables
+        try { if(typeof buildSales==='function') buildSales(APP.salesData||[]); } catch(e){}
+        try { if(typeof buildCredit==='function') buildCredit(APP.creditData||[]); } catch(e){}
+        try { if(typeof renderGSTR1History==='function') renderGSTR1History(); } catch(e){}
+        try { if(typeof renderGSTR1View==='function') renderGSTR1View(); } catch(e){}
+        try { if(typeof window.renderGSTR3BHistory==='function') window.renderGSTR3BHistory(); } catch(e){}
+        try { if(typeof window.renderRCMTable==='function') window.renderRCMTable(); } catch(e){}
+        try { updateStorageBadge(); } catch(e){}
+        console.log('🔄 UI refreshed with server data');
+      }
+    }, true); // silent=true to avoid spamming toasts
+  }, 30000);
 })();
 
 // ══════════════════════════════════════════════════════════════
