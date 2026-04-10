@@ -4050,10 +4050,9 @@ function openITCSyncModal() {
   document.getElementById('itc-sm-db').value     = c.db     || '';
   document.getElementById('itc-sm-login').value  = c.login  || '';
   document.getElementById('itc-sm-apikey').value = c.apiKey || '';
-  var _now = new Date();
-  var _cy  = _now.getMonth() >= 3 ? _now.getFullYear() : _now.getFullYear() - 1;
-  document.getElementById('itc-sm-from').value = _cy + '-04-01';
-  document.getElementById('itc-sm-to').value   = (_cy + 1) + '-03-31';
+  // Use the FY dates already configured in APP.odooConfig (avoids wrong-year bug when month >= April)
+  document.getElementById('itc-sm-from').value = c.fromDate || '';
+  document.getElementById('itc-sm-to').value   = c.toDate   || '';
   document.getElementById('itc-modal-status').innerHTML = '';
 }
 function closeITCSyncModal() {
@@ -4790,10 +4789,9 @@ function openRCMSyncModal() {
   document.getElementById('rcm-sm-db').value     = c.db    || '';
   document.getElementById('rcm-sm-login').value  = c.login || '';
   document.getElementById('rcm-sm-apikey').value = c.apiKey|| '';
-  var _now = new Date();
-  var _cy  = _now.getMonth() >= 3 ? _now.getFullYear() : _now.getFullYear() - 1;
-  document.getElementById('rcm-sm-from').value = _cy + '-04-01';
-  document.getElementById('rcm-sm-to').value   = (_cy+1) + '-03-31';
+  // Use the FY dates already configured in APP.odooConfig (avoids wrong-year bug when month >= April)
+  document.getElementById('rcm-sm-from').value = c.fromDate || '';
+  document.getElementById('rcm-sm-to').value   = c.toDate   || '';
   document.getElementById('rcm-modal-status').innerHTML = '';
 }
 function closeRCMSyncModal() {
@@ -5684,9 +5682,9 @@ loadGstr3bState();
     el=document.getElementById('rcm-sm-db');     if(el) el.value=c.db||'';
     el=document.getElementById('rcm-sm-login');  if(el) el.value=c.login||'';
     el=document.getElementById('rcm-sm-apikey'); if(el) el.value=c.apiKey||'';
-    var now=new Date(), yr=now.getMonth()>=3?now.getFullYear():now.getFullYear()-1;
-    el=document.getElementById('rcm-sm-from');   if(el) el.value=yr+'-04-01';
-    el=document.getElementById('rcm-sm-to');     if(el) el.value=(yr+1)+'-03-31';
+    // Use the FY dates already configured in APP.odooConfig (avoids wrong-year bug when month >= April)
+    el=document.getElementById('rcm-sm-from');   if(el) el.value=c.fromDate||'';
+    el=document.getElementById('rcm-sm-to');     if(el) el.value=c.toDate||'';
     el=document.getElementById('rcm-sync-status'); if(el) el.innerHTML='';
   };
   window.closeRCMSyncModal = function() {
