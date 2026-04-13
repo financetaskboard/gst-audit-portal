@@ -5234,6 +5234,9 @@ loadGstr3bState();
                 '<option value="b2b">B2B — Direct Purchases</option>' +
                 '<option value="b2ba">B2BA — Amended B2B</option>' +
                 '<option value="cdnr">CDNR — Credit/Debit Notes</option>' +
+                '<option value="cdnra">CDNRA — Amended Cr/Dr Notes</option>' +
+                '<option value="impg">IMPG — Import of Goods (Customs)</option>' +
+                '<option value="impgsez">IMPGSEZ — Import from SEZ</option>' +
                 '<option value="isd_dist">ISD — From GSTR-2B</option>' +
                 '<option value="isd">ISD — From GSTR-6</option>' +
               '</select>' +
@@ -6959,6 +6962,101 @@ function parseGSTR2B(json, coKey, month, year, fy, branch) {
   });
 
 
+  /* ── CDNRA: Amended Credit / Debit Notes ────────────────────────
+     docdata.cdnra has the same shape as docdata.cdnr but carries the
+     REVISED note after an amendment is filed by the supplier.
+     The original (pre-amendment) note number is in nt.ontnum; the
+     revised (current) note number is in nt.ntnum — we index BOTH so
+     that ITC-Books matching works regardless of which number Odoo stored. */
+  var cdnra = docdata.cdnra || [];
+  cdnra.forEach(function(supplier) {
+    (supplier.nt || []).forEach(function(nt) {
+      var isCredit = (nt.typ === 'C') ||
+                     ((nt.ntty || '').toLowerCase().indexOf('c') >= 0);
+      var t = extractTax(nt);
+      var inum     = (nt.ntnum  || '').toString().trim();
+      var inumOrig = (nt.ontnum || '').toString().trim();
+      var inumNorm     = inum.toUpperCase().replace(/\s+/g, '');
+      var inumNormOrig = inumOrig.toUpperCase().replace(/\s+/g, '');
+      if (inumNorm)     invRefs.push(inumNorm);
+      if (inumNormOrig) invRefs.push(inumNormOrig); // index original note no. too
+      invoiceList.push({
+        source:          'cdnra',
+        supplierName:    supplier.trdnm || '',
+        supplierGSTIN:   supplier.ctin  || '',
+        inum:            inum,
+        inumNorm:        inumNorm,
+        origNoteNo:      inumOrig,       // pre-amendment note number (display only)
+        dt:              nt.dt   || '',
+        origDt:          nt.odt  || '',  // original note date
+        txval:           round(t.txval),
+        igst:            round(t.igst),
+        cgst:            round(t.cgst),
+        sgst:            round(t.sgst),
+        isCredit:        isCredit
+      });
+      if (isCredit) {
+        totalTaxable -= t.txval; totalIGST -= t.igst; totalCGST -= t.cgst; totalSGST -= t.sgst;
+      } else {
+        totalTaxable += t.txval; totalIGST += t.igst; totalCGST += t.cgst; totalSGST += t.sgst;
+      }
+    });
+  });
+
+  /* ── IMPG: Import of Goods — IGST paid at Customs ───────────────
+     docdata.impg contains Bill-of-Entry (BOE) level records.
+     Key fields: boenum (BOE number), boedt (BOE date), isamd (amendment flag).
+     Only IGST is applicable on imports; CGST/SGST are always 0. */
+  var impg = docdata.impg || [];
+  impg.forEach(function(inv) {
+    var inum     = (inv.boenum || inv.inum || '').toString().trim();
+    var inumNorm = inum.toUpperCase().replace(/\s+/g, '');
+    if (inumNorm) invRefs.push(inumNorm);
+    var t = extractTax(inv);
+    totalInvoices++;
+    invoiceList.push({
+      source:        'impg',
+      supplierName:  inv.pname || 'Customs (Import)',  // port name when available
+      supplierGSTIN: '',
+      inum:          inum,
+      inumNorm:      inumNorm,
+      dt:            inv.boedt || inv.dt || '',
+      txval:         round(t.txval),
+      igst:          round(t.igst),
+      cgst:          0,
+      sgst:          0,
+      isCredit:      false
+    });
+    totalTaxable += t.txval; totalIGST += t.igst;
+  });
+
+  /* ── IMPGSEZ: Import of Goods / Services from SEZ Units ─────────
+     docdata.impgsez — invoices from SEZ suppliers; IGST + CGST/SGST possible. */
+  var impgsez = docdata.impgsez || [];
+  impgsez.forEach(function(supplier) {
+    (supplier.inv || []).forEach(function(inv) {
+      var inum     = (inv.inum || '').toString().trim();
+      var inumNorm = inum.toUpperCase().replace(/\s+/g, '');
+      if (inumNorm) invRefs.push(inumNorm);
+      var t = extractTax(inv);
+      totalInvoices++;
+      invoiceList.push({
+        source:        'impgsez',
+        supplierName:  supplier.trdnm || '',
+        supplierGSTIN: supplier.ctin  || '',
+        inum:          inum,
+        inumNorm:      inumNorm,
+        dt:            inv.dt || '',
+        txval:         round(t.txval),
+        igst:          round(t.igst),
+        cgst:          round(t.cgst),
+        sgst:          round(t.sgst),
+        isCredit:      false
+      });
+      totalTaxable += t.txval; totalIGST += t.igst; totalCGST += t.cgst; totalSGST += t.sgst;
+    });
+  });
+
   /* ── ISD: Input Service Distributor credits in GSTR-2B ──────────
      These are GST credits distributed TO this GSTIN by an ISD unit.
      They appear in the GSTR-2B JSON under docdata.isd (separate from B2B).
@@ -7462,7 +7560,7 @@ window.openG2BRecon = function(filterCoKey, filterMonth) {
     'only-books': '<span style="background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;white-space:nowrap">\uD83D\uDCDA Only in Books</span>',
     'only-g2b':   '<span style="background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;white-space:nowrap">\uD83D\uDCC4 Only in GSTR-2B</span>'
   };
-  var SRCL = {b2b:'B2B',b2ba:'B2BA\u00b9',cdnr:'CDNR'};
+  var SRCL = {b2b:'B2B', b2ba:'B2BA\u00b9', cdnr:'CDNR', cdnra:'CDNRA\u00b9', impg:'IMPG', impgsez:'IMPGSEZ', isd_dist:'ISD'};
 
   /* ── Build CSS helper ─────────────────────────────────────────── */
   var TD  = 'padding:7px 9px;border-bottom:1px solid #f3f2f1;font-size:12px;';
@@ -7869,6 +7967,9 @@ window.renderG2BInvoiceList = function() {
     b2b:      '<span style="background:#e8f4fd;color:#0078d4;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">B2B</span>',
     b2ba:     '<span style="background:#fff4ce;color:#835b00;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">B2BA</span>',
     cdnr:     '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">CDNR</span>',
+    cdnra:    '<span style="background:#fce8d5;color:#ca5010;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">CDNRA</span>',
+    impg:     '<span style="background:#dff6dd;color:#107c10;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">IMPG</span>',
+    impgsez:  '<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">IMPGSEZ</span>',
     isd:      '<span style="background:#f5f0ff;color:#5c0099;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">ISD</span>',
     isd_dist: '<span style="background:#f5f0ff;color:#5c0099;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">ISD</span>'
   };
