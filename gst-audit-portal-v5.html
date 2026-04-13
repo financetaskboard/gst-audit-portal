@@ -643,34 +643,36 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
             <div style="display:flex;align-items:center;gap:10px">
               <span style="font-size:14px">📊</span>
               <span class="thdr-title" style="font-size:13px">GSTR-2B vs GSTR-3B</span>
-              <span class="thdr-sub">GSTR-2B ITC available vs GSTR-3B Table 4(4)+4(5) ITC claimed &mdash; company &amp; branch wise &mdash; click company to expand branches</span>
+              <span class="thdr-sub">Compare GSTR-2B ITC available against GSTR-3B Table 4 ITC claimed — company wise</span>
             </div>
+            <button class="btn btn-default" style="font-size:11px;padding:4px 10px" onclick="toast('GSTR-2B vs GSTR-3B Recon — coming soon','📊')">Open Recon ↗</button>
           </div>
           <div class="twrap">
             <table style="width:100%;border-collapse:collapse;font-size:12px">
               <thead>
                 <tr style="background:#faf9f8">
-                  <th rowspan="2" style="padding:7px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:2px solid var(--border);border-right:1px solid var(--border);min-width:200px">Company / Branch</th>
+                  <th rowspan="2" style="padding:7px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:2px solid var(--border);border-right:1px solid var(--border);min-width:200px">Name of Company</th>
                   <th colspan="4" style="padding:6px 10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:#e8f4fd;color:#004e8c">GSTR-2B (ITC Available)</th>
-                  <th colspan="4" style="padding:6px 10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:#dff6dd;color:#107c10">GSTR-3B Table 4(4)+(5) (ITC Claimed)</th>
-                  <th colspan="3" style="padding:6px 10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);background:#fff4ce;color:#835b00">Difference (2B − 3B)</th>
+                  <th colspan="4" style="padding:6px 10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:#dff6dd;color:#107c10">GSTR-3B Table 4 (ITC Claimed)</th>
+                  <th colspan="4" style="padding:6px 10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);background:#fff4ce;color:#835b00">Difference</th>
                 </tr>
                 <tr style="background:#faf9f8">
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap">Taxable</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap">IGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap">CGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap;border-right:1px solid var(--border)">SGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap">Net ITC</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap">IGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap">CGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap;border-right:1px solid var(--border)">SGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#835b00;border-bottom:2px solid var(--border);background:#fff4ce;white-space:nowrap">IGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#835b00;border-bottom:2px solid var(--border);background:#fff4ce;white-space:nowrap">CGST</th>
-                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#835b00;border-bottom:2px solid var(--border);background:#fff4ce;white-space:nowrap">SGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap;min-width:90px">Taxable Value</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap;min-width:70px">IGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap;min-width:70px">CGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#004e8c;border-bottom:2px solid var(--border);background:#e8f4fd;white-space:nowrap;min-width:70px;border-right:1px solid var(--border)">SGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap;min-width:90px">Taxable Value</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap;min-width:70px">IGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap;min-width:70px">CGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#107c10;border-bottom:2px solid var(--border);background:#dff6dd;white-space:nowrap;min-width:70px;border-right:1px solid var(--border)">SGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#835b00;border-bottom:2px solid var(--border);background:#fff4ce;white-space:nowrap;min-width:90px">Taxable Value</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#835b00;border-bottom:2px solid var(--border);background:#fff4ce;white-space:nowrap;min-width:70px">IGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#835b00;border-bottom:2px solid var(--border);background:#fff4ce;white-space:nowrap;min-width:70px">CGST</th>
+                  <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:#835b00;border-bottom:2px solid var(--border);background:#fff4ce;white-space:nowrap;min-width:70px">SGST</th>
                 </tr>
               </thead>
               <tbody id="inp-g2bvsg3b-body">
-                <tr><td colspan="12" style="text-align:center;color:var(--muted);padding:18px;font-size:12px">Import GSTR-2B JSON &amp; GSTR-3B PDF files to populate this table.</td></tr>
+                <tr><td colspan="13" style="text-align:center;color:var(--muted);padding:18px;font-size:12px">Import GSTR-2B JSON &amp; GSTR-3B PDF files to populate this table.</td></tr>
               </tbody>
               <tfoot id="inp-g2bvsg3b-foot"></tfoot>
             </table>
@@ -1367,103 +1369,48 @@ function updateInputDash() {
   } else {
     var rows2='', t2T=0,t2Ig=0,t2Cg=0,t2Sg=0,t3T=0,t3Ig=0,t3Cg=0,t3Sg=0;
     function df2(v){return Math.abs(v)<500?'color:#605e5c':v>0?'color:#d83b01':'color:#107c10';}
-
-    // Helper: sum GSTR-3B ITC from a set of entries
-    // Uses Table 4(5) All other ITC + Table 4(4) ISD (matches what GSTR-2B covers)
-    function g3bITC(arr) {
-      return {
-        igst: arr.reduce(function(s,d){return s+(d.itc5_igst||0)+(d.itc4_igst||0);},0),
-        cgst: arr.reduce(function(s,d){return s+(d.itc5_cgst||0)+(d.itc4_cgst||0);},0),
-        sgst: arr.reduce(function(s,d){return s+(d.itc5_sgst||0)+(d.itc4_sgst||0);},0),
-        // Taxable proxy: sum of Net ITC available as taxable equivalent
-        tax:  arr.reduce(function(s,d){return s+(d.itcNet_igst||0)+(d.itcNet_cgst||0)+(d.itcNet_sgst||0);},0)
-      };
-    }
-
     COMPANIES2.forEach(function(co) {
-      var g2bC = filtG2b.filter(function(d){return d.coKey===co.key;});
-      var g3bC = filtG3b.filter(function(d){return d.coKey===co.key;});
+      var g2bC  = filtG2b.filter(function(d){return d.coKey===co.key;});
+      var g3bC  = filtG3b.filter(function(d){return d.coKey===co.key;});
       if (!g2bC.length && !g3bC.length) return;
-
       var b2T  = g2bC.reduce(function(s,d){return s+(d.taxable||0);},0);
       var b2Ig = g2bC.reduce(function(s,d){return s+(d.igst||0);},0);
       var b2Cg = g2bC.reduce(function(s,d){return s+(d.cgst||0);},0);
       var b2Sg = g2bC.reduce(function(s,d){return s+(d.sgst||0);},0);
-      var g3   = g3bITC(g3bC);
-      t2T+=b2T; t2Ig+=b2Ig; t2Cg+=b2Cg; t2Sg+=b2Sg;
-      t3T+=g3.tax; t3Ig+=g3.igst; t3Cg+=g3.cgst; t3Sg+=g3.sgst;
-      var d2Ig=b2Ig-g3.igst, d2Cg=b2Cg-g3.cgst, d2Sg=b2Sg-g3.sgst;
-
-      // Collect unique branches from GSTR-2B for this company
-      var branchSet = {};
-      g2bC.forEach(function(d){ if(d.branch) branchSet[d.branch]=1; });
-      g3bC.forEach(function(d){ if(d.branch) branchSet[d.branch]=1; });
-      var branches = Object.keys(branchSet).sort();
-      var hasBranches = branches.length > 1 || (branches.length===1 && branches[0]);
-      var coRowId = 'g2bg3b-br-' + co.key;
-
-      // Company summary row
-      rows2 += '<tr style="background:#fafafa;cursor:'+(hasBranches?'pointer':'default')+'" '
-        +(hasBranches?'onclick="(function(){var el=document.getElementById(''+coRowId+'');if(el)el.style.display=el.style.display==='none'?'table-row-group':'none';})()"':'')+'>'
-        +'<td class="left" style="font-weight:700;padding:8px 12px">'
-        +(hasBranches?'<span style="font-size:10px;color:var(--muted);margin-right:4px">&#9660;</span>':'')+co.name+'</td>'
+      var g3Ig = g3bC.reduce(function(s,d){return s+(d.sec4&&d.sec4.igst?d.sec4.igst:0);},0);
+      var g3Cg = g3bC.reduce(function(s,d){return s+(d.sec4&&d.sec4.cgst?d.sec4.cgst:0);},0);
+      var g3Sg = g3bC.reduce(function(s,d){return s+(d.sec4&&d.sec4.sgst?d.sec4.sgst:0);},0);
+      var g3Tax= g3bC.reduce(function(s,d){return s+(d.s31a_taxable||0);},0);
+      t2T+=b2T;t2Ig+=b2Ig;t2Cg+=b2Cg;t2Sg+=b2Sg;t3T+=g3Tax;t3Ig+=g3Ig;t3Cg+=g3Cg;t3Sg+=g3Sg;
+      var d2T=b2T-g3Tax,d2Ig=b2Ig-g3Ig,d2Cg=b2Cg-g3Cg,d2Sg=b2Sg-g3Sg;
+      rows2+='<tr><td class="left" style="font-weight:600;padding:8px 12px">'+co.name+'</td>'
         +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right">'+pINR(b2T)+'</td>'
-        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(b2Ig)+'</td>'
-        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(b2Cg)+'</td>'
-        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;font-weight:700;border-right:1px solid var(--border)">'+pINR(b2Sg)+'</td>'
-        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right">'+pINR(g3.tax)+'</td>'
-        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(g3.igst)+'</td>'
-        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(g3.cgst)+'</td>'
-        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;font-weight:700;border-right:1px solid var(--border)">'+pINR(g3.sgst)+'</td>'
+        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right">'+pINR(b2Ig)+'</td>'
+        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right">'+pINR(b2Cg)+'</td>'
+        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;border-right:1px solid var(--border)">'+pINR(b2Sg)+'</td>'
+        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right">'+pINR(g3Tax)+'</td>'
+        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right">'+pINR(g3Ig)+'</td>'
+        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right">'+pINR(g3Cg)+'</td>'
+        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;border-right:1px solid var(--border)">'+pINR(g3Sg)+'</td>'
+        +'<td style="background:#fff4ce;'+df2(d2T)+';padding:7px 10px;text-align:right"><b>'+pINR(d2T)+'</b></td>'
         +'<td style="background:#fff4ce;'+df2(d2Ig)+';padding:7px 10px;text-align:right"><b>'+pINR(d2Ig)+'</b></td>'
         +'<td style="background:#fff4ce;'+df2(d2Cg)+';padding:7px 10px;text-align:right"><b>'+pINR(d2Cg)+'</b></td>'
         +'<td style="background:#fff4ce;'+df2(d2Sg)+';padding:7px 10px;text-align:right"><b>'+pINR(d2Sg)+'</b></td>'
         +'</tr>';
-
-      // Branch detail rows (collapsible)
-      if (hasBranches) {
-        rows2 += '<tbody id="'+coRowId+'" style="display:none">';
-        branches.forEach(function(br) {
-          var brG2b = g2bC.filter(function(d){return (d.branch||'')===(br||'');});
-          var brG3b = g3bC.filter(function(d){return (d.branch||'')===(br||'');});
-          if (!brG2b.length && !brG3b.length) return;
-          var brb2T  = brG2b.reduce(function(s,d){return s+(d.taxable||0);},0);
-          var brb2Ig = brG2b.reduce(function(s,d){return s+(d.igst||0);},0);
-          var brb2Cg = brG2b.reduce(function(s,d){return s+(d.cgst||0);},0);
-          var brb2Sg = brG2b.reduce(function(s,d){return s+(d.sgst||0);},0);
-          var brg3   = g3bITC(brG3b);
-          var brd2Ig=brb2Ig-brg3.igst, brd2Cg=brb2Cg-brg3.cgst, brd2Sg=brb2Sg-brg3.sgst;
-          rows2 += '<tr style="background:#f8fbff">'
-            +'<td class="left" style="padding:6px 12px 6px 28px;color:var(--muted);font-size:12px">'
-            +'<span style="color:var(--accent);margin-right:5px">&#8627;</span>'+br+'</td>'
-            +'<td style="background:#eaf4fd;padding:6px 10px;text-align:right;font-size:12px">'+pINR(brb2T)+'</td>'
-            +'<td style="background:#eaf4fd;padding:6px 10px;text-align:right;font-size:12px">'+pINR(brb2Ig)+'</td>'
-            +'<td style="background:#eaf4fd;padding:6px 10px;text-align:right;font-size:12px">'+pINR(brb2Cg)+'</td>'
-            +'<td style="background:#eaf4fd;padding:6px 10px;text-align:right;font-size:12px;border-right:1px solid var(--border)">'+pINR(brb2Sg)+'</td>'
-            +'<td style="background:#edfbee;padding:6px 10px;text-align:right;font-size:12px">'+pINR(brg3.tax)+'</td>'
-            +'<td style="background:#edfbee;padding:6px 10px;text-align:right;font-size:12px">'+pINR(brg3.igst)+'</td>'
-            +'<td style="background:#edfbee;padding:6px 10px;text-align:right;font-size:12px">'+pINR(brg3.cgst)+'</td>'
-            +'<td style="background:#edfbee;padding:6px 10px;text-align:right;font-size:12px;border-right:1px solid var(--border)">'+pINR(brg3.sgst)+'</td>'
-            +'<td style="background:#fffdf0;'+df2(brd2Ig)+';padding:6px 10px;text-align:right;font-size:12px">'+pINR(brd2Ig)+'</td>'
-            +'<td style="background:#fffdf0;'+df2(brd2Cg)+';padding:6px 10px;text-align:right;font-size:12px">'+pINR(brd2Cg)+'</td>'
-            +'<td style="background:#fffdf0;'+df2(brd2Sg)+';padding:6px 10px;text-align:right;font-size:12px">'+pINR(brd2Sg)+'</td>'
-            +'</tr>';
-        });
-        rows2 += '</tbody>';
-      }
     });
-    body2.innerHTML = rows2 || '<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:18px">No data for selected filter.</td></tr>';
+    body2.innerHTML = rows2 || '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:18px">No data for selected filter.</td></tr>';
     if (foot2) {
-      var fd2Ig=t2Ig-t3Ig, fd2Cg=t2Cg-t3Cg, fd2Sg=t2Sg-t3Sg;
+      var fd2T=t2T-t3T,fd2Ig=t2Ig-t3Ig,fd2Cg=t2Cg-t3Cg,fd2Sg=t2Sg-t3Sg;
       foot2.innerHTML='<tr class="total-row"><td class="left" style="padding:8px 12px">TOTAL</td>'
         +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right">'+pINR(t2T)+'</td>'
-        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(t2Ig)+'</td>'
-        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(t2Cg)+'</td>'
-        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;font-weight:700;border-right:1px solid var(--border)">'+pINR(t2Sg)+'</td>'
+        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right">'+pINR(t2Ig)+'</td>'
+        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right">'+pINR(t2Cg)+'</td>'
+        +'<td style="background:#e8f4fd;padding:7px 10px;text-align:right;border-right:1px solid var(--border)">'+pINR(t2Sg)+'</td>'
         +'<td style="background:#dff6dd;padding:7px 10px;text-align:right">'+pINR(t3T)+'</td>'
-        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(t3Ig)+'</td>'
-        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;font-weight:700">'+pINR(t3Cg)+'</td>'
-        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;font-weight:700;border-right:1px solid var(--border)">'+pINR(t3Sg)+'</td>'
+        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right">'+pINR(t3Ig)+'</td>'
+        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right">'+pINR(t3Cg)+'</td>'
+        +'<td style="background:#dff6dd;padding:7px 10px;text-align:right;border-right:1px solid var(--border)">'+pINR(t3Sg)+'</td>'
+        +'<td style="background:#fff4ce;'+df2(fd2T)+';padding:7px 10px;text-align:right"><b>'+pINR(fd2T)+'</b></td>'
         +'<td style="background:#fff4ce;'+df2(fd2Ig)+';padding:7px 10px;text-align:right"><b>'+pINR(fd2Ig)+'</b></td>'
         +'<td style="background:#fff4ce;'+df2(fd2Cg)+';padding:7px 10px;text-align:right"><b>'+pINR(fd2Cg)+'</b></td>'
         +'<td style="background:#fff4ce;'+df2(fd2Sg)+';padding:7px 10px;text-align:right"><b>'+pINR(fd2Sg)+'</b></td>'
@@ -4293,44 +4240,16 @@ function parseGSTR3BText(text) {
   const totalCGST    = a[2];
   const totalSGST    = a[3];
 
-  // ── Table 4: Eligible ITC (added to old parser to fix GSTR-2B vs GSTR-3B table) ──
-  const itc1 = simpleNums(/\(1\)\s*Import of goods/i,                                      4);
-  const itc2 = simpleNums(/\(2\)\s*Import of services/i,                                   4);
-  const itc3 = simpleNums(/\(3\)\s*Inward supplies liable to reverse charge.*?other than/i, 4);
-  const itc4 = simpleNums(/\(4\)\s*Inward supplies from ISD/i,                             4);
-  const itc5 = simpleNums(/\(5\)\s*All other ITC/i,                                        4);
-  const itcRev1   = simpleNums(/\(1\)\s*As per rules\s*38/i,                               4);
-  const itcRev2   = simpleNums(/B.*?\(2\)\s*Others/i,                                      4);
-  const itcNet    = simpleNums(/C\.?\s*Net ITC available/i,                                 4);
-  const itcInelig = simpleNums(/\(2\)\s*Ineligible ITC under section 16/i,                 4);
-
-  // Auto-detect branch from GSTIN state code
-  const stateCode3b = gstin ? gstin.slice(0, 2) : '';
-  const autoBranch  = (typeof GST_STATE_MAP !== 'undefined' && stateCode3b)
-    ? (GST_STATE_MAP[stateCode3b] || '') : '';
-
   return {
     gstin, legalName, fy, periodMonth, monthKey,
     month: monthKey, year: String(calYear),
-    stateCode: stateCode3b,
-    branch: autoBranch,
     sec31a: { taxable: a[0], igst: a[1], cgst: a[2], sgst: a[3] },
     sec31b: { taxable: b[0], igst: b[1] },
     sec31c: { taxable: c[0] },
     sec31d: { taxable: d[0], igst: d[1], cgst: d[2], sgst: d[3] },
     sec32:  { taxable: r32[0], igst: r32[1] },
     totalTaxable, totalIGST, totalCGST, totalSGST,
-    rcmTaxable: d[0], rcmIGST: d[1], rcmCGST: d[2], rcmSGST: d[3],
-    // Table 4 ITC — flat fields matching new-importer format
-    itc1_igst: itc1[0]||0, itc1_cgst: itc1[1]||0, itc1_sgst: itc1[2]||0,
-    itc2_igst: itc2[0]||0, itc2_cgst: itc2[1]||0, itc2_sgst: itc2[2]||0,
-    itc3_igst: itc3[0]||0, itc3_cgst: itc3[1]||0, itc3_sgst: itc3[2]||0,
-    itc4_igst: itc4[0]||0, itc4_cgst: itc4[1]||0, itc4_sgst: itc4[2]||0,
-    itc5_igst: itc5[0]||0, itc5_cgst: itc5[1]||0, itc5_sgst: itc5[2]||0,
-    itcRev1_igst: itcRev1[0]||0, itcRev1_cgst: itcRev1[1]||0, itcRev1_sgst: itcRev1[2]||0,
-    itcRev2_igst: itcRev2[0]||0, itcRev2_cgst: itcRev2[1]||0, itcRev2_sgst: itcRev2[2]||0,
-    itcNet_igst:  itcNet[0]||0,  itcNet_cgst:  itcNet[1]||0,  itcNet_sgst:  itcNet[2]||0,
-    itcInelig_igst: itcInelig[0]||0, itcInelig_cgst: itcInelig[1]||0, itcInelig_sgst: itcInelig[2]||0
+    rcmTaxable: d[0], rcmIGST: d[1], rcmCGST: d[2], rcmSGST: d[3]
   };
 }
 
@@ -4381,20 +4300,11 @@ async function importGSTR3BPDF() {
       monthKey = ms + ' ' + ys;
     }
 
-    // Derive branch from GSTIN state code if not already set by parser
-    const autoBranch3b = parsed.branch || (function() {
-      var sc = gstin.slice(0, 2);
-      return (typeof GST_STATE_MAP !== 'undefined' && sc) ? (GST_STATE_MAP[sc] || '') : '';
-    })();
-
     const entry = Object.assign({}, parsed, {
       coKey, coName, gstin, fy,
-      branch: autoBranch3b,
-      stateCode: gstin.slice(0, 2) || parsed.stateCode || '',
       month: monthKey, period: monthKey,
       importedOn: new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
-      fileName: g3bPendingFile.name,
-      _rawText: text   // stored for auto-migration when parser improves
+      fileName: g3bPendingFile.name
     });
 
     // Replace existing for same company+month
@@ -5161,47 +5071,44 @@ loadGstr3bState();
           '<div class="warn-box"><strong>&#128204; How to get GSTR-2B JSON:</strong> gst.gov.in &rarr; Returns &rarr; GSTR-2B &rarr; Select Month &amp; Year &rarr; Download JSON &rarr; Upload here for each company separately.</div>' +
           // ── GSTR-2B Upload ──
           '<div class="tcard" style="margin-bottom:12px">' +
-            '<div class="thdr"><span class="thdr-title">&#128228; Bulk Import GSTR-2B JSON</span><span class="thdr-sub">Drop multiple JSON / ZIP files at once &mdash; company &amp; period auto-detected</span></div>' +
+            '<div class="thdr"><span class="thdr-title">&#128194; Upload GSTR-2B JSON</span><span class="thdr-sub">One JSON or ZIP file per company per month from GST Portal</span></div>' +
             '<div class="page-inner" style="padding:14px 16px">' +
-
-              // ── Bulk drop zone ──
-              '<div id="g2b-bulk-zone" style="border:2px dashed var(--border);border-radius:4px;padding:28px;text-align:center;cursor:pointer;transition:border-color .15s;background:#fafafa" ' +
-                'onclick="document.getElementById(\'g2b-bulk-inp\').click()" ' +
-                'ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\';this.style.background=\'#f0f7ff\'" ' +
-                'ondragleave="this.style.borderColor=\'\';this.style.background=\'#fafafa\'" ' +
-                'ondrop="handleG2BBulkDrop(event)">' +
-                '<div style="font-size:28px;margin-bottom:6px">&#128228;</div>' +
-                '<div style="font-size:13px;font-weight:600;color:var(--text)">Click or drag &amp; drop one or multiple GSTR-2B JSON / ZIP files</div>' +
-                '<div style="font-size:11px;color:var(--muted);margin-top:4px">Company, Branch &amp; Period are auto-detected from each file</div>' +
-                '<input type="file" id="g2b-bulk-inp" accept=".json,.zip" multiple style="display:none" onchange="handleG2BBulkFiles(this.files)"/>' +
+              '<div class="upload-zone" id="g2b-drop-zone" onclick="document.getElementById(\'g2b-json-inp\').click()" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\'" ondragleave="this.style.borderColor=\'\'" ondrop="handleG2BDrop(event)">' +
+                '<div class="upload-icon">&#128229;</div>' +
+                '<div class="upload-text">Click or drag &amp; drop GSTR-2B JSON or ZIP</div>' +
+                '<div class="upload-sub">.json or .zip downloaded from GST Portal</div>' +
+                '<input type="file" id="g2b-json-inp" accept=".json,.zip" style="display:none" onchange="handleG2BJSON(this)"/>' +
               '</div>' +
-
-              // ── Pending batch table ──
-              '<div id="g2b-batch-wrap" style="display:none;margin-top:12px">' +
-                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-                  '<span style="font-size:12px;font-weight:600;color:var(--text)" id="g2b-batch-title">0 files ready</span>' +
-                  '<div style="display:flex;gap:6px">' +
-                    '<button class="btn btn-primary" onclick="runG2BBulkImport()" id="g2b-batch-run">&#128229; Import All</button>' +
-                    '<button class="btn btn-default" onclick="clearG2BBatch()" style="font-size:11px">&#10005; Clear</button>' +
-                  '</div>' +
-                '</div>' +
-                '<div class="twrap"><table>' +
-                  '<thead><tr class="simple-hdr">' +
-                    '<th class="left" style="width:24px">#</th>' +
-                    '<th class="left">File</th>' +
-                    '<th class="left">Detected GSTIN</th>' +
-                    '<th class="left">Period</th>' +
-                    '<th class="left">Branch</th>' +
-                    '<th class="left">Company</th>' +
-                    '<th class="left">Status</th>' +
-                    '<th></th>' +
-                  '</tr></thead>' +
-                  '<tbody id="g2b-batch-body"></tbody>' +
-                '</table></div>' +
+              '<div class="upload-ok" id="g2b-upload-ok" style="display:none">&#9989; File loaded: <strong id="g2b-fname"></strong></div>' +
+              '<div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;margin-top:10px">' +
+                '<div class="fg"><label class="flabel">Company</label>' +
+                  '<select class="finput" id="g2b-company">' +
+                    '<option value="gsl">Ginni Systems Ltd</option>' +
+                    '<option value="em">Easemy Business Pvt Ltd</option>' +
+                    '<option value="bt">Browntape Infrosolution Pvt Ltd</option>' +
+                    '<option value="roxfo">Roxfortech Infosolutions Pvt Ltd</option>' +
+                  '</select></div>' +
+                '<div class="fg"><label class="flabel">Branch / State</label>' +
+                  '<select class="finput" id="g2b-branch"><option value="">&#8212; All Branches (Company-level) &#8212;</option></select></div>' +
+                '<div class="fg"><label class="flabel">Month</label>' +
+                  '<select class="finput" id="g2b-month">' +
+                    '<option value="Apr">April</option><option value="May">May</option><option value="Jun">June</option>' +
+                    '<option value="Jul">July</option><option value="Aug">August</option><option value="Sep">September</option>' +
+                    '<option value="Oct">October</option><option value="Nov">November</option><option value="Dec">December</option>' +
+                    '<option value="Jan">January</option><option value="Feb">February</option><option value="Mar">March</option>' +
+                  '</select></div>' +
+                '<div class="fg"><label class="flabel">Year</label>' +
+                  '<select class="finput" id="g2b-year"><option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option></select></div>' +
+                '<div class="fg"><label class="flabel">Financial Year</label>' +
+                  '<select class="finput" id="g2b-fy"><option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option></select></div>' +
               '</div>' +
-
+              '<div class="sync-actions" style="margin-top:12px">' +
+                '<button class="btn btn-primary" onclick="importGSTR2BJSON()">&#128229; Import &amp; Parse JSON</button>' +
+                '<span class="sync-info" id="g2b-import-status">No file selected</span>' +
+              '</div>' +
             '</div>' +
           '</div>' +
+
           // ── ISD Upload (GSTR-6) ──
           '<div class="tcard" style="margin-bottom:12px">' +
             '<div class="thdr" style="background:#f5f0ff">'
@@ -5327,9 +5234,6 @@ loadGstr3bState();
                 '<option value="b2b">B2B — Direct Purchases</option>' +
                 '<option value="b2ba">B2BA — Amended B2B</option>' +
                 '<option value="cdnr">CDNR — Credit/Debit Notes</option>' +
-                '<option value="cdnra">CDNRA — Amended Cr/Dr Notes</option>' +
-                '<option value="impg">IMPG — Import of Goods (Customs)</option>' +
-                '<option value="impgsez">IMPGSEZ — Import from SEZ</option>' +
                 '<option value="isd_dist">ISD — From GSTR-2B</option>' +
                 '<option value="isd">ISD — From GSTR-6</option>' +
               '</select>' +
@@ -5523,31 +5427,6 @@ loadGstr3bState();
     var totalCGST = (a[2]||0);
     var totalSGST = (a[3]||0);
 
-    // ── Table 4: Eligible ITC ─────────────────────────────────────
-    // 4(1) Import of goods
-    var itc1 = numsAfter(/\(1\)\s*Import of goods/i, 4);
-    // 4(2) Import of services
-    var itc2 = numsAfter(/\(2\)\s*Import of services/i, 4);
-    // 4(3) Inward supplies liable to reverse charge (other than 1 & 2)
-    var itc3 = numsAfter(/\(3\)\s*Inward supplies liable to reverse charge\s*\(other than/i, 4);
-    // 4(4) Inward supplies from ISD
-    var itc4 = numsAfter(/\(4\)\s*Inward supplies from ISD/i, 4);
-    // 4(5) All other ITC
-    var itc5 = numsAfter(/\(5\)\s*All other ITC/i, 4);
-    // 4(B)(1) ITC Reversed — rules 38,42,43
-    var itcRev1 = numsAfter(/\(1\)\s*As per rules\s*38[,\s]*42\s*(?:&|and)\s*43/i, 4);
-    // 4(B)(2) ITC Reversed — Others
-    var itcRev2 = numsAfter(/B.*?\(2\)\s*Others/i, 4);
-    // 4(C) Net ITC available
-    var itcNet = numsAfter(/C\.?\s*Net ITC available/i, 4);
-    // 4(D)(2) Ineligible ITC sec 16(4) & PoS
-    var itcInelig = numsAfter(/\(2\)\s*Ineligible ITC under section 16/i, 4);
-
-    // Combined ITC available (4A total = rows 1+2+3+4+5)
-    var itcA_igst = (itc1[0]||0)+(itc2[0]||0)+(itc3[0]||0)+(itc4[0]||0)+(itc5[0]||0);
-    var itcA_cgst = (itc1[1]||0)+(itc2[1]||0)+(itc3[1]||0)+(itc4[1]||0)+(itc5[1]||0);
-    var itcA_sgst = (itc1[2]||0)+(itc2[2]||0)+(itc3[2]||0)+(itc4[2]||0)+(itc5[2]||0);
-
     return {
       coKey:        coKey,
       coName:       coName,
@@ -5558,7 +5437,6 @@ loadGstr3bState();
       year:         year,
       fy:           fy,
       importedOn:   new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
-      // Table 3.1
       s31a_taxable: a[0]||0,  s31a_igst: a[1]||0,  s31a_cgst: a[2]||0,  s31a_sgst: a[3]||0,
       s31b_taxable: b[0]||0,
       s31c_taxable: c[0]||0,
@@ -5567,18 +5445,7 @@ loadGstr3bState();
       totalTaxable: totalTaxable,
       totalIGST:    totalIGST,
       totalCGST:    totalCGST,
-      totalSGST:    totalSGST,
-      // Table 4 — ITC (individual rows for detailed view)
-      itc1_igst: itc1[0]||0, itc1_cgst: itc1[1]||0, itc1_sgst: itc1[2]||0,  // Import of Goods
-      itc2_igst: itc2[0]||0, itc2_cgst: itc2[1]||0, itc2_sgst: itc2[2]||0,  // Import of Services
-      itc3_igst: itc3[0]||0, itc3_cgst: itc3[1]||0, itc3_sgst: itc3[2]||0,  // RCM
-      itc4_igst: itc4[0]||0, itc4_cgst: itc4[1]||0, itc4_sgst: itc4[2]||0,  // ISD
-      itc5_igst: itc5[0]||0, itc5_cgst: itc5[1]||0, itc5_sgst: itc5[2]||0,  // All other ITC
-      itcA_igst: itcA_igst,  itcA_cgst: itcA_cgst,  itcA_sgst: itcA_sgst,   // Total 4A
-      itcRev1_igst: itcRev1[0]||0, itcRev1_cgst: itcRev1[1]||0, itcRev1_sgst: itcRev1[2]||0,
-      itcRev2_igst: itcRev2[0]||0, itcRev2_cgst: itcRev2[1]||0, itcRev2_sgst: itcRev2[2]||0,
-      itcNet_igst:  itcNet[0]||0,  itcNet_cgst:  itcNet[1]||0,  itcNet_sgst:  itcNet[2]||0,
-      itcInelig_igst: itcInelig[0]||0, itcInelig_cgst: itcInelig[1]||0, itcInelig_sgst: itcInelig[2]||0
+      totalSGST:    totalSGST
     };
   }
 
@@ -5619,7 +5486,6 @@ loadGstr3bState();
     try {
       var text   = await extractPDFText(window._g3bPendingFile);
       var parsed = parseGSTR3BText(text, coKey, coName, branch, month, year, fy);
-      parsed._rawText = text;   // stored for auto-migration when parser improves
       APP.gstr3bData = APP.gstr3bData.filter(function(d){ return !(d.coKey===coKey && d.branch===branch && d.monthSh===month && d.year===year); });
       APP.gstr3bData.push(parsed);
       window.saveExtState();
@@ -6919,309 +6785,6 @@ function matchG2B(refNo) {
 }
 
 /* ── Persist ──────────────────────────────────────────────────── */
-/* ══════════════════════════════════════════════════════════════════
-   AUTO-MIGRATION ENGINE
-   Runs once on load. Detects stale GSTR-2B and GSTR-3B entries
-   that were saved with an old parser and re-parses them silently
-   using stored rawDocdata / rawText — no re-upload needed.
-══════════════════════════════════════════════════════════════════ */
-window.autoMigrateStoredData = function() {
-  var g2bFixed = 0, g3bFixed = 0;
-
-  // ── GSTR-2B: re-parse entries missing parserVer:2 that have _rawDocdata ──
-  (APP.gstr2bData || []).forEach(function(entry, i) {
-    if ((entry.parserVer || 0) >= 2) return;         // already up-to-date
-    if (!entry._rawDocdata) return;                   // no raw stored — skip (user must re-upload once)
-    try {
-      var docdata = JSON.parse(entry._rawDocdata);
-      // Re-run only the new sections (cdnra, impg, impgsez) and merge into existing entry
-      var round = function(v){ return Math.round((v||0)*100)/100; };
-
-      function extractTax(obj) {
-        if (obj.items && obj.items.length) {
-          var t=0,ig=0,cg=0,sg=0;
-          obj.items.forEach(function(it){ t+=(it.txval||0);ig+=(it.igst||0);cg+=(it.cgst||0);sg+=(it.sgst||it.utgst||0); });
-          return {txval:t,igst:ig,cgst:cg,sgst:sg};
-        }
-        return {txval:obj.txval||0,igst:obj.igst||0,cgst:obj.cgst||0,sgst:obj.sgst||obj.utgst||0};
-      }
-
-      // Remove any existing cdnra/impg/impgsez from invoiceList (avoid dupes)
-      var cleanList = (entry.invoiceList||[]).filter(function(inv){
-        return inv.source!=='cdnra' && inv.source!=='impg' && inv.source!=='impgsez';
-      });
-      var cleanRefs = (entry.invRefs||[]).slice();
-
-      // CDNRA
-      (docdata.cdnra||[]).forEach(function(sup){
-        (sup.nt||[]).forEach(function(nt){
-          var isCredit=(nt.typ==='C')||((nt.ntty||'').toLowerCase().indexOf('c')>=0);
-          var t=extractTax(nt);
-          var inum=(nt.ntnum||'').toString().trim();
-          var inumNorm=inum.toUpperCase().replace(/\s+/g,'');
-          var inumOrig=(nt.ontnum||'').toString().trim();
-          var inumNormOrig=inumOrig.toUpperCase().replace(/\s+/g,'');
-          if(inumNorm && cleanRefs.indexOf(inumNorm)<0) cleanRefs.push(inumNorm);
-          if(inumNormOrig && cleanRefs.indexOf(inumNormOrig)<0) cleanRefs.push(inumNormOrig);
-          cleanList.push({source:'cdnra',supplierName:sup.trdnm||'',supplierGSTIN:sup.ctin||'',
-            inum:inum,inumNorm:inumNorm,origNoteNo:inumOrig,dt:nt.dt||'',origDt:nt.odt||'',
-            txval:round(t.txval),igst:round(t.igst),cgst:round(t.cgst),sgst:round(t.sgst),isCredit:isCredit});
-        });
-      });
-      // IMPG
-      (docdata.impg||[]).forEach(function(inv){
-        var inum=(inv.boenum||inv.inum||'').toString().trim();
-        var inumNorm=inum.toUpperCase().replace(/\s+/g,'');
-        if(inumNorm && cleanRefs.indexOf(inumNorm)<0) cleanRefs.push(inumNorm);
-        var t=extractTax(inv);
-        cleanList.push({source:'impg',supplierName:inv.pname||'Customs (Import)',supplierGSTIN:'',
-          inum:inum,inumNorm:inumNorm,dt:inv.boedt||inv.dt||'',
-          txval:round(t.txval),igst:round(t.igst),cgst:0,sgst:0,isCredit:false});
-      });
-      // IMPGSEZ
-      (docdata.impgsez||[]).forEach(function(sup){
-        (sup.inv||[]).forEach(function(inv){
-          var inum=(inv.inum||'').toString().trim();
-          var inumNorm=inum.toUpperCase().replace(/\s+/g,'');
-          if(inumNorm && cleanRefs.indexOf(inumNorm)<0) cleanRefs.push(inumNorm);
-          var t=extractTax(inv);
-          cleanList.push({source:'impgsez',supplierName:sup.trdnm||'',supplierGSTIN:sup.ctin||'',
-            inum:inum,inumNorm:inumNorm,dt:inv.dt||'',
-            txval:round(t.txval),igst:round(t.igst),cgst:round(t.cgst),sgst:round(t.sgst),isCredit:false});
-        });
-      });
-
-      APP.gstr2bData[i].invoiceList = cleanList;
-      APP.gstr2bData[i].invRefs     = cleanRefs;
-      APP.gstr2bData[i].parserVer   = 2;
-      g2bFixed++;
-    } catch(e) { console.warn('GSTR-2B migration failed for entry', i, e.message); }
-  });
-
-  // ── GSTR-3B: re-parse entries missing Table 4 ITC that have _rawText ──
-  (APP.gstr3bData || []).forEach(function(entry, i) {
-    if (entry.itc5_igst !== undefined) return;        // already has Table 4
-    if (!entry._rawText) return;                      // no raw text — skip
-    try {
-      // Use whichever parser is available
-      var reparsed;
-      if (typeof parseGSTR3BText === 'function') {
-        // Main top-level parser
-        reparsed = parseGSTR3BText(entry._rawText);
-      } else {
-        console.warn('GSTR-3B migration: parser not available yet');
-        return;
-      }
-      // Merge only the Table 4 fields — keep everything else (coKey, branch etc.)
-      var itcFields = ['itc1_igst','itc1_cgst','itc1_sgst',
-        'itc2_igst','itc2_cgst','itc2_sgst',
-        'itc3_igst','itc3_cgst','itc3_sgst',
-        'itc4_igst','itc4_cgst','itc4_sgst',
-        'itc5_igst','itc5_cgst','itc5_sgst',
-        'itcA_igst','itcA_cgst','itcA_sgst',
-        'itcRev1_igst','itcRev1_cgst','itcRev1_sgst',
-        'itcRev2_igst','itcRev2_cgst','itcRev2_sgst',
-        'itcNet_igst','itcNet_cgst','itcNet_sgst',
-        'itcInelig_igst','itcInelig_cgst','itcInelig_sgst'];
-      itcFields.forEach(function(f){ APP.gstr3bData[i][f] = reparsed[f] || 0; });
-      g3bFixed++;
-    } catch(e) { console.warn('GSTR-3B migration failed for entry', i, e.message); }
-  });
-
-  if (g2bFixed || g3bFixed) {
-    if (g2bFixed) { saveG2BState(); rebuildGSTR2BRefSet(); }
-    if (g3bFixed) {
-      try { saveGstr3bState(); } catch(e){}
-      try { if(typeof window.saveExtState==='function') window.saveExtState(); } catch(e){}
-    }
-    console.log('✅ Auto-migration: ' + g2bFixed + ' GSTR-2B + ' + g3bFixed + ' GSTR-3B entries re-parsed silently.');
-    try { updateInputDash(); } catch(e){}
-    try { renderGSTR2BHistory(); } catch(e){}
-  }
-};
-
-/* ══════════════════════════════════════════════════════════════════
-   BULK GSTR-2B IMPORT ENGINE
-   Handles multi-file drop / select — auto-detects company, branch,
-   period from each JSON/ZIP — shows confirmation table — imports all
-══════════════════════════════════════════════════════════════════ */
-
-// Build PAN → coKey map from user-configured GSTINs
-function buildPanCoKeyMap() {
-  var map = {};
-  var gm = APP.gstinMap || {};
-  Object.keys(gm).forEach(function(coKey) {
-    var gstin = (gm[coKey]||'').toString().trim().toUpperCase();
-    if (gstin.length >= 12) { map[gstin.slice(2,12)] = coKey; }
-  });
-  return map;
-}
-
-function resolveCoKeyFromGSTIN(gstin) {
-  if (!gstin || gstin.length < 12) return '';
-  var map = buildPanCoKeyMap();
-  return map[gstin.slice(2,12).toUpperCase()] || '';
-}
-
-// Async read file as text (returns null for ZIP without extracting)
-function readFileText(file) {
-  return new Promise(function(resolve) {
-    if (file.name.toLowerCase().endsWith('.zip')) { resolve(null); return; }
-    var r = new FileReader();
-    r.onload  = function(e){ resolve(e.target.result); };
-    r.onerror = function(){ resolve(null); };
-    r.readAsText(file);
-  });
-}
-
-// Read text from ZIP's first JSON entry
-async function readZipJSON(file) {
-  var ab  = await file.arrayBuffer();
-  var zip = await JSZip.loadAsync(ab);
-  var jsonFile = null;
-  zip.forEach(function(rel, f){ if(rel.endsWith('.json') && !jsonFile) jsonFile=f; });
-  if (!jsonFile) return null;
-  return jsonFile.async('string');
-}
-
-window._g2bBatch = [];
-
-window.handleG2BBulkDrop = function(e) {
-  e.preventDefault();
-  var zone = document.getElementById('g2b-bulk-zone');
-  if (zone) { zone.style.borderColor=''; zone.style.background='#fafafa'; }
-  if (e.dataTransfer && e.dataTransfer.files.length) handleG2BBulkFiles(e.dataTransfer.files);
-};
-
-window.handleG2BBulkFiles = async function(fileList) {
-  if (!fileList || !fileList.length) return;
-  var batchWrap  = document.getElementById('g2b-batch-wrap');
-  var batchTitle = document.getElementById('g2b-batch-title');
-  var batchBody  = document.getElementById('g2b-batch-body');
-  if (!batchWrap || !batchBody) return;
-
-  batchWrap.style.display = 'block';
-  batchBody.innerHTML = '<tr><td colspan="8" style="padding:12px;text-align:center;color:var(--muted)">&#9203; Reading files&hellip;</td></tr>';
-
-  var files = Array.from(fileList);
-  window._g2bBatch = [];
-
-  for (var i=0; i<files.length; i++) {
-    var file = files[i];
-    var entry = { file:file, gstin:'', period:'', monthSh:'', year:'', fy:'', branch:'', coKey:'', status:'pending' };
-    try {
-      var txt = file.name.toLowerCase().endsWith('.zip') ? await readZipJSON(file) : await readFileText(file);
-      if (txt) {
-        var d = JSON.parse(txt);
-        var gstin  = (d.data&&d.data.gstin)||d.gstin||'';
-        var rtnprd = (d.data&&d.data.rtnprd)||d.rtnprd||'';
-        entry.gstin  = gstin;
-        var ap = parseRtnPrd(rtnprd);
-        if (ap) { entry.monthSh=ap.month; entry.year=ap.year; entry.fy=ap.fy; entry.period=ap.month+' '+ap.year; }
-        entry.branch = GST_STATE_MAP[gstin.slice(0,2)] || '';
-        entry.coKey  = resolveCoKeyFromGSTIN(gstin) || '';
-        entry._txt   = txt;  // cache for import
-      }
-    } catch(e2) {}
-    window._g2bBatch.push(entry);
-  }
-
-  var coNames = {gsl:'Ginni Systems Ltd',em:'Easemy Business Pvt Ltd',bt:'Browntape Infrosolution Pvt Ltd',roxfo:'Roxfortech Infosolutions Pvt Ltd'};
-  var coOpts  = Object.keys(coNames).map(function(k){ return '<option value="'+k+'">'+coNames[k]+'</option>'; }).join('');
-
-  if (batchTitle) batchTitle.textContent = window._g2bBatch.length + ' file(s) ready to import';
-
-  batchBody.innerHTML = window._g2bBatch.map(function(entry, idx) {
-    var statusBadge = '<span style="color:var(--muted);font-size:11px">&#9679; Pending</span>';
-    return '<tr id="g2b-brow-'+idx+'">'
-      +'<td style="padding:6px 8px;color:var(--muted);font-size:11px">'+(idx+1)+'</td>'
-      +'<td style="padding:6px 8px;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+entry.file.name+'">'+entry.file.name+'</td>'
-      +'<td style="padding:6px 8px;font-family:monospace;font-size:11px;color:#5c0099">'+(entry.gstin||'<span style="color:var(--red)">Not detected</span>')+'</td>'
-      +'<td style="padding:6px 8px">'+(entry.period?'<span class="tag tag-month">'+entry.period+'</span>':'<span style="color:var(--red);font-size:11px">Unknown</span>')+'</td>'
-      +'<td style="padding:6px 8px;font-size:11px">'+(entry.branch||'—')+'</td>'
-      +'<td style="padding:6px 8px">'
-        +'<select id="g2b-bco-'+idx+'" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:2px;font-family:inherit">'
-        +'<option value="">— Select —</option>'+coOpts
-        +'</select>'
-      +'</td>'
-      +'<td id="g2b-bstat-'+idx+'" style="padding:6px 8px">'+statusBadge+'</td>'
-      +'<td style="padding:6px 8px"><button onclick="window._g2bBatch.splice('+idx+',1);window.handleG2BBulkFiles([])" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px">&#215;</button></td>'
-      +'</tr>';
-  }).join('');
-
-  // Pre-select detected coKey in each dropdown
-  window._g2bBatch.forEach(function(entry, idx) {
-    var sel = document.getElementById('g2b-bco-'+idx);
-    if (sel && entry.coKey) sel.value = entry.coKey;
-  });
-};
-
-window.runG2BBulkImport = async function() {
-  var batch = window._g2bBatch || [];
-  if (!batch.length) { toast('No files in batch','&#9888;'); return; }
-  var btn = document.getElementById('g2b-batch-run');
-  if (btn) btn.disabled = true;
-
-  for (var idx=0; idx<batch.length; idx++) {
-    var entry  = batch[idx];
-    var statEl = document.getElementById('g2b-bstat-'+idx);
-    var coSel  = document.getElementById('g2b-bco-'+idx);
-    var coKey  = (coSel && coSel.value) || entry.coKey || '';
-
-    if (!coKey) {
-      if (statEl) statEl.innerHTML = '<span style="color:var(--red);font-size:11px">&#10060; Select company</span>';
-      continue;
-    }
-    if (!entry.period) {
-      if (statEl) statEl.innerHTML = '<span style="color:var(--red);font-size:11px">&#10060; Period not detected</span>';
-      continue;
-    }
-    if (statEl) statEl.innerHTML = '<span style="color:var(--muted);font-size:11px">&#9203; Importing&hellip;</span>';
-
-    try {
-      var jsonText = entry._txt;
-      if (!jsonText) {
-        jsonText = await readZipJSON(entry.file);
-        if (!jsonText) throw new Error('Could not read file');
-      }
-      var parsed = parseGSTR2B(jsonText, coKey, entry.monthSh, entry.year, entry.fy, entry.branch);
-      try {
-        var _rawD = JSON.parse(jsonText);
-        parsed._rawDocdata = JSON.stringify((_rawD.data&&_rawD.data.docdata)||_rawD.docdata||{});
-      } catch(e2){}
-
-      var usedMonth=parsed.monthSh, usedYear=parsed.year, usedBranch=parsed.branch;
-      APP.gstr2bData = APP.gstr2bData.filter(function(d){
-        return !(d.coKey===coKey && d.monthSh===usedMonth && d.year===usedYear && (d.branch||'')===(usedBranch||''));
-      });
-      APP.gstr2bData.push(parsed);
-      if (statEl) statEl.innerHTML = '<span style="color:var(--green);font-size:11px;font-weight:700">&#9989; Done &middot; '+parsed.invoices+' inv</span>';
-    } catch(err) {
-      if (statEl) statEl.innerHTML = '<span style="color:var(--red);font-size:11px">&#10060; '+err.message+'</span>';
-    }
-  }
-
-  saveG2BState();
-  rebuildGSTR2BRefSet();
-  renderGSTR2BHistory();
-  renderGSTR2BView();
-  try { updateInputDash(); } catch(e){}
-  try { window.renderITCTable(); } catch(e){}
-  var badge = document.getElementById('dtab-gstr2b-badge');
-  if (badge) { badge.style.display=''; badge.textContent=APP.gstr2bData.length; }
-  if (btn) btn.disabled = false;
-  toast('&#9989; Bulk import complete — '+APP.gstr2bData.length+' total entries','&#9989;');
-  window._g2bBatch = [];
-};
-
-window.clearG2BBatch = function() {
-  window._g2bBatch = [];
-  var wrap = document.getElementById('g2b-batch-wrap');
-  if (wrap) wrap.style.display = 'none';
-  var inp = document.getElementById('g2b-bulk-inp');
-  if (inp) inp.value = '';
-};
-
 function saveG2BState() {
   try { localStorage.setItem(LS_G2B, JSON.stringify(APP.gstr2bData)); } catch(e){}
   try { saveAppState(); } catch(e){}
@@ -7318,8 +6881,6 @@ function parseGSTR2B(json, coKey, month, year, fy, branch) {
   }
 
   var totalInvoices = 0, totalTaxable = 0, totalIGST = 0, totalCGST = 0, totalSGST = 0;
-  // Per-section counters — used in history table and toast message
-  var cntB2B = 0, cntB2BA = 0, cntCDNR = 0, cntCDNRA = 0, cntIMPG = 0, cntIMPGSEZ = 0;
   var invRefs    = []; // normalised invoice numbers — for fast match lookup
   var invoiceList = []; // full invoice details — for invoice-wise reconciliation
   var round = function(v) { return Math.round((v || 0) * 100) / 100; };
@@ -7350,7 +6911,7 @@ function parseGSTR2B(json, coKey, month, year, fy, branch) {
   var b2b = docdata.b2b || [];
   b2b.forEach(function(supplier) {
     (supplier.inv || []).forEach(function(inv) {
-      totalInvoices++; cntB2B++;
+      totalInvoices++;
       var t = pushInv(supplier.trdnm, supplier.ctin, inv, 'b2b');
       totalTaxable += t.txval; totalIGST += t.igst; totalCGST += t.cgst; totalSGST += t.sgst;
     });
@@ -7360,7 +6921,7 @@ function parseGSTR2B(json, coKey, month, year, fy, branch) {
   var b2ba = docdata.b2ba || [];
   b2ba.forEach(function(supplier) {
     (supplier.inv || []).forEach(function(inv) {
-      totalInvoices++; cntB2BA++;
+      totalInvoices++;
       var t = pushInv(supplier.trdnm, supplier.ctin, inv, 'b2ba');
       totalTaxable += t.txval; totalIGST += t.igst; totalCGST += t.cgst; totalSGST += t.sgst;
     });
@@ -7370,7 +6931,6 @@ function parseGSTR2B(json, coKey, month, year, fy, branch) {
   var cdnr = docdata.cdnr || [];
   cdnr.forEach(function(supplier) {
     (supplier.nt || []).forEach(function(nt) {
-      cntCDNR++;
       var isCredit = (nt.typ === 'C') ||
                      ((nt.ntty || '').toLowerCase().indexOf('c') >= 0);
       var t = extractTax(nt);
@@ -7398,102 +6958,6 @@ function parseGSTR2B(json, coKey, month, year, fy, branch) {
     });
   });
 
-
-  /* ── CDNRA: Amended Credit / Debit Notes ────────────────────────
-     docdata.cdnra has the same shape as docdata.cdnr but carries the
-     REVISED note after an amendment is filed by the supplier.
-     The original (pre-amendment) note number is in nt.ontnum; the
-     revised (current) note number is in nt.ntnum — we index BOTH so
-     that ITC-Books matching works regardless of which number Odoo stored. */
-  var cdnra = docdata.cdnra || [];
-  cdnra.forEach(function(supplier) {
-    (supplier.nt || []).forEach(function(nt) {
-      cntCDNRA++;
-      var isCredit = (nt.typ === 'C') ||
-                     ((nt.ntty || '').toLowerCase().indexOf('c') >= 0);
-      var t = extractTax(nt);
-      var inum     = (nt.ntnum  || '').toString().trim();
-      var inumOrig = (nt.ontnum || '').toString().trim();
-      var inumNorm     = inum.toUpperCase().replace(/\s+/g, '');
-      var inumNormOrig = inumOrig.toUpperCase().replace(/\s+/g, '');
-      if (inumNorm)     invRefs.push(inumNorm);
-      if (inumNormOrig) invRefs.push(inumNormOrig); // index original note no. too
-      invoiceList.push({
-        source:          'cdnra',
-        supplierName:    supplier.trdnm || '',
-        supplierGSTIN:   supplier.ctin  || '',
-        inum:            inum,
-        inumNorm:        inumNorm,
-        origNoteNo:      inumOrig,       // pre-amendment note number (display only)
-        dt:              nt.dt   || '',
-        origDt:          nt.odt  || '',  // original note date
-        txval:           round(t.txval),
-        igst:            round(t.igst),
-        cgst:            round(t.cgst),
-        sgst:            round(t.sgst),
-        isCredit:        isCredit
-      });
-      if (isCredit) {
-        totalTaxable -= t.txval; totalIGST -= t.igst; totalCGST -= t.cgst; totalSGST -= t.sgst;
-      } else {
-        totalTaxable += t.txval; totalIGST += t.igst; totalCGST += t.cgst; totalSGST += t.sgst;
-      }
-    });
-  });
-
-  /* ── IMPG: Import of Goods — IGST paid at Customs ───────────────
-     docdata.impg contains Bill-of-Entry (BOE) level records.
-     Key fields: boenum (BOE number), boedt (BOE date), isamd (amendment flag).
-     Only IGST is applicable on imports; CGST/SGST are always 0. */
-  var impg = docdata.impg || [];
-  impg.forEach(function(inv) {
-    var inum     = (inv.boenum || inv.inum || '').toString().trim();
-    var inumNorm = inum.toUpperCase().replace(/\s+/g, '');
-    if (inumNorm) invRefs.push(inumNorm);
-    var t = extractTax(inv);
-    totalInvoices++; cntIMPG++;
-    invoiceList.push({
-      source:        'impg',
-      supplierName:  inv.pname || 'Customs (Import)',  // port name when available
-      supplierGSTIN: '',
-      inum:          inum,
-      inumNorm:      inumNorm,
-      dt:            inv.boedt || inv.dt || '',
-      txval:         round(t.txval),
-      igst:          round(t.igst),
-      cgst:          0,
-      sgst:          0,
-      isCredit:      false
-    });
-    totalTaxable += t.txval; totalIGST += t.igst;
-  });
-
-  /* ── IMPGSEZ: Import of Goods / Services from SEZ Units ─────────
-     docdata.impgsez — invoices from SEZ suppliers; IGST + CGST/SGST possible. */
-  var impgsez = docdata.impgsez || [];
-  impgsez.forEach(function(supplier) {
-    (supplier.inv || []).forEach(function(inv) {
-      var inum     = (inv.inum || '').toString().trim();
-      var inumNorm = inum.toUpperCase().replace(/\s+/g, '');
-      if (inumNorm) invRefs.push(inumNorm);
-      var t = extractTax(inv);
-      totalInvoices++; cntIMPGSEZ++;
-      invoiceList.push({
-        source:        'impgsez',
-        supplierName:  supplier.trdnm || '',
-        supplierGSTIN: supplier.ctin  || '',
-        inum:          inum,
-        inumNorm:      inumNorm,
-        dt:            inv.dt || '',
-        txval:         round(t.txval),
-        igst:          round(t.igst),
-        cgst:          round(t.cgst),
-        sgst:          round(t.sgst),
-        isCredit:      false
-      });
-      totalTaxable += t.txval; totalIGST += t.igst; totalCGST += t.cgst; totalSGST += t.sgst;
-    });
-  });
 
   /* ── ISD: Input Service Distributor credits in GSTR-2B ──────────
      These are GST credits distributed TO this GSTIN by an ISD unit.
@@ -7551,8 +7015,7 @@ function parseGSTR2B(json, coKey, month, year, fy, branch) {
     isdSgst:        round(isdSGST),        // ISD SGST
     invRefs:        invRefs,     // normalised inums for fast GSTR-2B match
     invoiceList:    invoiceList, // full invoice details for invoice-wise recon
-    autoperiod:     autoperiod,  // {month, year, fy} — null if rtnprd not found
-    parserVer:      2            // v2 = includes cdnra / impg / impgsez parsing
+    autoperiod:     autoperiod   // {month, year, fy} — null if rtnprd not found
   };
 }
 
@@ -7664,11 +7127,6 @@ window.importGSTR2BJSON = async function() {
       jsonText = await file.text();
     }
     var parsed = parseGSTR2B(jsonText, coKey, month, year, fy, branch);
-    // Store raw docdata for auto-migration when parser improves in future
-    try {
-      var _rawD = JSON.parse(jsonText);
-      parsed._rawDocdata = JSON.stringify((_rawD.data && _rawD.data.docdata) || _rawD.docdata || {});
-    } catch(e2) { parsed._rawDocdata = null; }
 
     // Use auto-detected period/branch from the JSON if available
     var usedMonth  = parsed.monthSh;
@@ -8004,7 +7462,7 @@ window.openG2BRecon = function(filterCoKey, filterMonth) {
     'only-books': '<span style="background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;white-space:nowrap">\uD83D\uDCDA Only in Books</span>',
     'only-g2b':   '<span style="background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;white-space:nowrap">\uD83D\uDCC4 Only in GSTR-2B</span>'
   };
-  var SRCL = {b2b:'B2B', b2ba:'B2BA\u00b9', cdnr:'CDNR', cdnra:'CDNRA\u00b9', impg:'IMPG', impgsez:'IMPGSEZ', isd_dist:'ISD'};
+  var SRCL = {b2b:'B2B',b2ba:'B2BA\u00b9',cdnr:'CDNR'};
 
   /* ── Build CSS helper ─────────────────────────────────────────── */
   var TD  = 'padding:7px 9px;border-bottom:1px solid #f3f2f1;font-size:12px;';
@@ -8411,9 +7869,6 @@ window.renderG2BInvoiceList = function() {
     b2b:      '<span style="background:#e8f4fd;color:#0078d4;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">B2B</span>',
     b2ba:     '<span style="background:#fff4ce;color:#835b00;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">B2BA</span>',
     cdnr:     '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">CDNR</span>',
-    cdnra:    '<span style="background:#fce8d5;color:#ca5010;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">CDNRA</span>',
-    impg:     '<span style="background:#dff6dd;color:#107c10;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">IMPG</span>',
-    impgsez:  '<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">IMPGSEZ</span>',
     isd:      '<span style="background:#f5f0ff;color:#5c0099;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">ISD</span>',
     isd_dist: '<span style="background:#f5f0ff;color:#5c0099;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px">ISD</span>'
   };
@@ -8920,38 +8375,12 @@ window.renderG2BHistoryCombined = function() {
     return;
   }
 
-  // ── Detect stale entries (parsed before parserVer:2 — missing cdnra/impg/impgsez) ──
-  var staleEntries = all.filter(function(row) {
-    return row.type === 'gstr2b' && !(row.d.parserVer >= 2);
-  });
-  if (staleEntries.length) {
-    var staleNames = staleEntries.map(function(row) {
-      return '<strong>' + (row.d.coName||'') + '</strong> &middot; ' + (row.d.month||'');
-    }).join(' &nbsp;|&nbsp; ');
-    var existingBanner = body.parentElement.querySelector('.stale-reimport-banner');
-    if (existingBanner) existingBanner.remove();
-    var banner = document.createElement('div');
-    banner.className = 'stale-reimport-banner';
-    banner.style.cssText = 'background:#fff4ce;border:1px solid #e6a817;border-radius:3px;padding:9px 14px;margin-bottom:10px;font-size:12px;color:#835b00;line-height:1.6';
-    banner.innerHTML = '<strong>&#9888;&#65039; ' + staleEntries.length + ' file(s) need re-import</strong> &mdash; These were uploaded before the CDNRA / IMPG / IMPGSEZ fix and are missing amendment data.<br>'
-      + '<span style="font-size:11px">' + staleNames + '</span><br>'
-      + '<span style="font-size:11px;color:#605e5c">&#8594; Delete each entry below and re-upload the same JSON file to fix.</span>';
-    body.parentElement.insertBefore(banner, body.parentElement.querySelector('.twrap') || body);
-  } else {
-    var existingBanner = body.parentElement.querySelector('.stale-reimport-banner');
-    if (existingBanner) existingBanner.remove();
-  }
-
   body.innerHTML = all.map(function(row) {
     var d = row.d;
     var totalITC = (d.igst||0)+(d.cgst||0)+(d.sgst||0);
-    var isStale  = row.type === 'gstr2b' && !(d.parserVer >= 2);
     var typeBadge = row.type === 'isd'
       ? '<span style="background:#f5f0ff;color:#5c0099;font-size:10px;font-weight:700;padding:1px 7px;border-radius:2px;white-space:nowrap">ISD</span>'
       : '<span style="background:#e0f7f5;color:#00796b;font-size:10px;font-weight:700;padding:1px 7px;border-radius:2px;white-space:nowrap">2B</span>';
-    var staleBadge = isStale
-      ? ' <span title="Uploaded before CDNRA/IMPG fix — re-import to update" style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px;cursor:help;white-space:nowrap">&#9888; Re-import</span>'
-      : '';
     var branchDisplay = d.branch
       ? '<span class="tag tag-branch">'+d.branch+'</span>'
         + (d.stateCode ? '<span style="font-size:10px;color:var(--muted);margin-left:4px">('+d.stateCode+')</span>' : '')
@@ -8959,13 +8388,13 @@ window.renderG2BHistoryCombined = function() {
     var refsCount = d.invRefs ? d.invRefs.length : '\u2014';
     var delFn = row.type==='isd' ? 'deleteISD('+row.idx+')' : 'deleteGSTR2B('+row.idx+')';
 
-    return '<tr' + (isStale ? ' style="background:#fffdf0"' : '') + '>'
+    return '<tr>'
       + '<td class="left" style="font-size:11px">'+d.importedOn+'</td>'
       + '<td class="left">'+typeBadge+'</td>'
       + '<td class="left">'+d.coName+'</td>'
       + '<td class="left">'+branchDisplay+'</td>'
       + '<td class="left" style="font-family:monospace;font-size:11px">'+(d.gstin||'\u2014')+'</td>'
-      + '<td class="left"><span class="tag tag-month">'+d.month+'</span>'+staleBadge+'</td>'
+      + '<td class="left"><span class="tag tag-month">'+d.month+'</span></td>'
       + '<td class="left">'+d.fy+'</td>'
       + '<td>'+(d.invoices||0).toLocaleString('en-IN')+'</td>'
       + '<td style="font-size:11px;color:var(--muted)">'+refsCount+'</td>'
@@ -9142,11 +8571,6 @@ try {
   if (_rawISD) { APP.isdData = JSON.parse(_rawISD) || []; }
 } catch(e) {}
 rebuildGSTR2BRefSet(); // rebuild after both GSTR-2B and ISD are loaded
-
-// Auto-migrate stale entries (silently re-parses using stored rawDocdata / rawText)
-setTimeout(function() {
-  try { window.autoMigrateStoredData(); } catch(e) { console.warn('autoMigrate:', e); }
-}, 500);
 
 setTimeout(function() {
   window.renderG2BHistoryCombined();
