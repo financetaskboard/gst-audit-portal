@@ -811,7 +811,7 @@ app.post('/api/sync/itc', async (req, res) => {
       ['date',         '>=',  fromDate],
       ['date',         '<=',  toDate],
       ['parent_state', '=',   'posted'],
-      ['move_type',    'in',  ['in_invoice', 'in_refund']]
+      ['move_type',    'in',  ['in_invoice', 'in_refund', 'entry']]   // 'entry' = MISC journal
     ];
     const lineFields = ['move_id', 'account_id', 'date', 'debit', 'credit', 'balance', 'name'];
 
@@ -846,6 +846,7 @@ app.post('/api/sync/itc', async (req, res) => {
           refNo:        '',
           vendorName:   '',
           isAdjustment: false,
+          isMisc:       false,          // set to true for 'entry' type moves
           itcType:      acInfo.itcType || 'Normal',
           branch:       brInfo.branch,
           company:      usePrefix ? brInfo.company : acInfo.company,
@@ -872,7 +873,7 @@ app.post('/api/sync/itc', async (req, res) => {
       const batchIds = moveIds.slice(i, i + MOVE_BATCH);
       const moves = await odooCall(session, 'account.move', 'read',
         [batchIds],
-        { fields: ['id', 'name', 'ref', 'partner_id', 'date', 'amount_untaxed'] }
+        { fields: ['id', 'name', 'ref', 'partner_id', 'date', 'amount_untaxed', 'move_type'] }
       );
       moves.forEach(m => {
         const g = moveGroups[m.id];
@@ -882,7 +883,10 @@ app.post('/api/sync/itc', async (req, res) => {
         g.vendorName = m.partner_id ? m.partner_id[1] : '';
         g.billDate   = m.date || g.billDate;
         g.taxable    = Math.abs(m.amount_untaxed || 0);
-        g.isAdjustment = !m.partner_id;
+        g.isMisc     = (m.move_type === 'entry');      // MISC journal entry flag
+        // MISC entries legitimately have no vendor — only skip entries that are
+        // neither bills nor MISC (e.g. pure adjustment lines with wrong account)
+        g.isAdjustment = !m.partner_id && !g.isMisc;
       });
     }
 
@@ -904,18 +908,26 @@ app.post('/api/sync/itc', async (req, res) => {
       const mo    = parseInt(d.slice(5, 7), 10) - 1;
       const month = (!isNaN(yr) && !isNaN(mo) && mo >= 0 && mo <= 11)
         ? MONTH_SHORT[mo] + ' ' + yr : '';
+      // For MISC (entry) moves, amount_untaxed = 0; derive taxable from GST amounts
+      // (CGST+SGST = 2× effective; IGST alone — use proportional inverse for display)
+      const taxable = g.isMisc && g.taxable === 0
+        ? round((g.cgst + g.sgst) > 0
+            ? (g.cgst + g.sgst) / 0.18        // assume 18% GST for approximation
+            : g.igst > 0 ? g.igst / 0.18 : 0)
+        : round(g.taxable);
       return {
         moveId:     g.moveId,
         moveNo:     g.moveNo,
         billDate:   g.billDate,
         month,
         refNo:      g.refNo,
-        vendorName: g.vendorName,
+        vendorName: g.vendorName || (g.isMisc ? 'MISC Entry' : ''),
         branch:     g.branch,
         company:    g.company,
         coKey:      g.coKey,
         itcType:    g.itcType,
-        taxable:    round(g.taxable),
+        isMisc:     g.isMisc || false,
+        taxable,
         igst:       round(g.igst),
         cgst:       round(g.cgst),
         sgst:       round(g.sgst)
