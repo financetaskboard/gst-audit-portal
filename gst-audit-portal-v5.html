@@ -1225,6 +1225,19 @@ function fINR(n){
 function pINR(n){const a=Math.abs(n),s=a>=10000000?(a/10000000).toFixed(4)+'Cr':a>=100000?(a/100000).toFixed(2)+'L':a>=1000?(a/1000).toFixed(1)+'K':a.toLocaleString('en-IN');return(n<0?'-':'')+'₹'+s;}
 
 // ── DUAL DASHBOARD SWITCHER ───────────────────────────────────
+// ── INVOICE SERIES → COMPANY KEY MAP ──────────────────────────
+// Maps invoice / credit-note number prefixes to the correct company key.
+// Takes PRIORITY over the company name from Odoo — add a series here
+// when Odoo has the wrong company on a document.
+// Keys: gsl | em | bt | roxfo
+var SERIES_MAP = {
+  'rbhr' : 'gsl',    // Ginni Systems Ltd — Haryana branch debit/credit note series
+  'cnrx' : 'roxfo',  // Roxfortech — Haryana
+  'srx'  : 'roxfo',  // Roxfortech — other state branch
+  'bilro': 'roxfo',  // Roxfortech — Bilaspur branch
+  // Add more as needed: 'PREFIX_LOWERCASE': 'company_key'
+};
+
 var _activeDash = 'sales';
 function switchDashboard(type) {
   _activeDash = type;
@@ -2156,7 +2169,14 @@ function buildReconG1Books() {
     { name:'Roxfortech Infosolutions Pvt Ltd',     key:'roxfo',  match:['roxfortech','roxfo','bilro','cnrx','srx'] }
   ];
   function getCompanyKey(r) {
-    var c = (r.company || '').toLowerCase();
+    var c   = (r.company || '').toLowerCase();
+    // Extract invoice/CN prefix — e.g. "RBHR" from "RBHR/2021/0005"
+    var inv = (r.invoice_no || r.cn_no || r.entryNo || r.name || '').split('/')[0].toLowerCase().trim();
+    // Priority 1: SERIES_MAP prefix override
+    if (inv && typeof SERIES_MAP !== 'undefined' && SERIES_MAP[inv]) {
+      return SERIES_MAP[inv];
+    }
+    // Priority 2: company name fragment match
     for (var i=0; i<COMPANIES.length; i++) {
       var co = COMPANIES[i];
       for (var j=0; j<co.match.length; j++) {
@@ -4167,9 +4187,16 @@ function updateDashCoRecon() {
   function matchCo(r, frags, key) {
     var c   = (r.company || r.coName || '').toLowerCase();
     var k   = r.coKey || '';
-    // Extract invoice prefix (CNRX from "CNRX/25-26/0001") for records where company='Unknown'
-    var inv = (r.invoice_no || r.cn_no || r.entryNo || r.name || '').split('/')[0].toLowerCase();
-    return frags.some(function(f){ return c.indexOf(f) >= 0 || inv === f; }) || k === key;
+    // Extract invoice/CN prefix e.g. "RBHR" from "RBHR/2021/0005"
+    var inv = (r.invoice_no || r.cn_no || r.entryNo || r.name || '').split('/')[0].toLowerCase().trim();
+    // Priority 1: SERIES_MAP prefix override — beats company name from Odoo
+    if (inv && typeof SERIES_MAP !== 'undefined' && SERIES_MAP[inv]) {
+      return SERIES_MAP[inv] === key;
+    }
+    // Priority 2: coKey exact match
+    if (k && k === key) return true;
+    // Priority 3: company name fragment match
+    return frags.some(function(f){ return c.indexOf(f) >= 0; });
   }
 
   function fv(n) {
