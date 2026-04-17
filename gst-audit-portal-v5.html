@@ -1238,6 +1238,31 @@ var SERIES_MAP = {
   // Add more as needed: 'PREFIX_LOWERCASE': 'company_key'
 };
 
+// ── Company display names for SERIES_MAP overrides ─────────────
+var CO_NAMES_MAP = {
+  gsl:   'Ginni Systems Ltd',
+  em:    'Easemy Business Pvt Ltd',
+  bt:    'Browntape Infrosolution Pvt Ltd',
+  roxfo: 'Roxfortech Infosolutions Pvt Ltd'
+};
+
+// ── Apply SERIES_MAP to ITC / credit-note records ──────────────
+// Call this after every sync and after loading from localStorage.
+function applySeriesMapToITC(arr) {
+  if (!arr || !arr.length) return arr || [];
+  return arr.map(function(r) {
+    // Use journal entry number (moveNo) as the series source
+    var prefix = ((r.moveNo || r.invoice_no || r.entryNo || '')).split('/')[0].toLowerCase().trim();
+    if (prefix && SERIES_MAP[prefix] && SERIES_MAP[prefix] !== r.coKey) {
+      var corrected = Object.assign({}, r);
+      corrected.coKey   = SERIES_MAP[prefix];
+      corrected.company = CO_NAMES_MAP[SERIES_MAP[prefix]] || r.company;
+      return corrected;
+    }
+    return r;
+  });
+}
+
 var _activeDash = 'sales';
 function switchDashboard(type) {
   _activeDash = type;
@@ -3727,7 +3752,11 @@ function loadAppState(){
   // ITC Books (Odoo ITC receivable accounts)
   try {
     var rawITC = localStorage.getItem('gst_itc');
-    if (rawITC) { APP.itcData = JSON.parse(rawITC) || []; }
+    if (rawITC) {
+      APP.itcData = JSON.parse(rawITC) || [];
+      // Fix any wrong company attribution using SERIES_MAP (e.g. RBHR → GSL)
+      if (typeof applySeriesMapToITC === 'function') APP.itcData = applySeriesMapToITC(APP.itcData);
+    }
   } catch(e) { console.warn('itc load:', e); }
 
   // ISD — GSTR-6 Input Service Distributor
@@ -4903,6 +4932,8 @@ async function runITCSync() {
     var res = await callProxy('/api/sync/itc', { url: url, db: db, username: login, apiKey: apiKey, fromDate: fromDate, toDate: toDate });
     if (!res.ok) throw new Error(res.error || 'ITC sync failed');
     APP.itcData = res.data;
+    // Apply SERIES_MAP — fix company attribution for mismatched journal entry series
+    APP.itcData = applySeriesMapToITC(APP.itcData);
     saveAppState();
     updateInputDash();
     window.renderITCTable();
@@ -7119,7 +7150,10 @@ loadGstr3bState();
     var q    = ((document.getElementById('itcv-search')      || {value:''}).value || '').toLowerCase();
 
     var data = (APP.itcData || []).filter(function(r) {
-      if (coF && r.coKey !== coF) return false;
+      // Re-apply SERIES_MAP for any records not yet corrected (e.g. old localStorage)
+      var prefix = ((r.moveNo||'')).split('/')[0].toLowerCase().trim();
+      var effectiveCoKey = (prefix && SERIES_MAP[prefix]) ? SERIES_MAP[prefix] : (r.coKey || '');
+      if (coF && effectiveCoKey !== coF) return false;
       if (moF && r.month !== moF) return false;
       return true;
     });
@@ -7216,14 +7250,20 @@ loadGstr3bState();
       var rowStyle = isCN ? ' style="background:#fff8f7;"' : '';
       var cnBadge  = isCN ? '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">CN</span>' : '';
       var numStyle = isCN ? 'color:#d83b01;font-weight:600' : '';
+      var dispPrefix = ((r.moveNo||'')).split('/')[0].toLowerCase().trim();
+      var dispCoKey  = (dispPrefix && SERIES_MAP[dispPrefix]) ? SERIES_MAP[dispPrefix] : (r.coKey||'');
+      var dispCompany= CO_NAMES_MAP[dispCoKey] || r.company || '—';
+      var seriesOverridden = dispCoKey !== (r.coKey||'') && !!SERIES_MAP[dispPrefix];
       rows += '<tr'+rowStyle+'>'
         + '<td class="left" style="color:var(--muted);font-size:11px;padding:7px 6px 7px 10px">'+(i+1)+'</td>'
-        + '<td class="left"><strong>'+(r.moveNo||'\u2014')+'</strong>'+cnBadge+'</td>'
+        + '<td class="left"><strong>'+(r.moveNo||'—')+'</strong>'+cnBadge+'</td>'
         + '<td class="left" style="white-space:nowrap;font-variant-numeric:tabular-nums">'+dispDate+'</td>'
-        + '<td class="left" style="font-family:monospace;font-size:11.5px;color:var(--accent)">'+(r.refNo||'\u2014')+'</td>'
-        + '<td class="left" style="font-weight:600;max-width:180px">'+(r.vendorName||'\u2014')+'</td>'
-        + '<td class="left"><span class="tag tag-branch">'+(r.branch||'\u2014')+'</span></td>'
-        + '<td class="left" style="font-size:11px;color:var(--muted)">'+(r.company||'\u2014')+'</td>'
+        + '<td class="left" style="font-family:monospace;font-size:11.5px;color:var(--accent)">'+(r.refNo||'—')+'</td>'
+        + '<td class="left" style="font-weight:600;max-width:180px">'+(r.vendorName||'—')+'</td>'
+        + '<td class="left"><span class="tag tag-branch">'+(r.branch||'—')+'</span></td>'
+        + '<td class="left" style="font-size:11px;color:var(--muted)">'+dispCompany
+          +(seriesOverridden ? ' <span title="Company corrected by Series Map" style="background:#fff4ce;color:#835b00;font-size:9px;font-weight:700;padding:0 4px;border-radius:2px;vertical-align:middle">✎ Series</span>' : '')
+          +'</td>'
         + '<td style="'+numStyle+'">'+pINR(r.taxable||0)+'</td>'
         + '<td style="'+numStyle+'">'+pINR(r.igst||0)+'</td>'
         + '<td style="'+numStyle+'">'+pINR(r.cgst||0)+'</td>'
