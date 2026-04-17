@@ -4285,8 +4285,29 @@ function updateDashCoRecon() {
   // ── TABLE 1: GSTR-1 vs GSTR-3B ──────────────────────────────────
   (function(){
     function coData(co, byBranch) {
-      var g1 = APP.gstr1Data.filter(function(d){ return matchCo(d, co.frags, co.key) && monthInRange(d.month||d.period||''); });
-      var g3 = (APP.gstr3bData||[]).filter(function(d){ return matchCo(d, co.frags, co.key) && monthInRange(d.month||d.period||''); });
+      var g1raw = APP.gstr1Data.filter(function(d){ return matchCo(d, co.frags, co.key) && monthInRange(d.month||d.period||''); });
+      var g3    = (APP.gstr3bData||[]).filter(function(d){ return matchCo(d, co.frags, co.key) && monthInRange(d.month||d.period||''); });
+
+      // ── Merge GSTR-1A amendments into GSTR-1 figures ──────────
+      var g1aAll = (APP.gstr1aData||[]).filter(function(a){ return matchCo(a, co.frags, co.key) && monthInRange(a.month||''); });
+      var g1 = g1raw.map(function(d){
+        var a = g1aAll.find(function(a){ return a.coKey===d.coKey && a.month===d.month; });
+        if (!a) return d;
+        var merged = Object.assign({}, d);
+        merged.totalTaxable = (d.totalTaxable||0)+(a.totalTaxable||0);
+        merged.totalIGST    = (d.totalIGST||0)+(a.totalIGST||0);
+        merged.totalCGST    = (d.totalCGST||0)+(a.totalCGST||0);
+        merged.totalSGST    = (d.totalSGST||0)+(a.totalSGST||0);
+        merged.netTaxable=merged.totalTaxable; merged.netIGST=merged.totalIGST;
+        merged.netCGST=merged.totalCGST;       merged.netSGST=merged.totalSGST;
+        return merged;
+      });
+      // Add standalone GSTR-1A months (where no GSTR-1 was uploaded)
+      g1aAll.forEach(function(a){
+        if (!g1raw.some(function(d){ return d.coKey===a.coKey && d.month===a.month; })) g1.push(a);
+      });
+      // ── End GSTR-1A merge ──────────────────────────────────────
+
       function calc(bg1, bg3) {
         var g1T=bg1.reduce(function(s,d){return s+(d.netTaxable||d.totalTaxable||0);},0);
         var g1I=bg1.reduce(function(s,d){return s+(d.netIGST||d.totalIGST||0);},0);
@@ -4307,7 +4328,7 @@ function updateDashCoRecon() {
       return calc(g1, g3);
     }
     renderTable('dash-g1g3-body','dash-g1g3-foot',
-      APP.gstr1Data.length||(APP.gstr3bData||[]).length,
+      APP.gstr1Data.length||(APP.gstr3bData||[]).length||(APP.gstr1aData||[]).length,
       'Import GSTR-1 &amp; GSTR-3B JSON files to populate this table.',
       COMPANIES, coData);
   })();
@@ -4321,9 +4342,29 @@ function updateDashCoRecon() {
       });
     }
     function coData(co, byBranch) {
-      var inv = APP.salesData.filter(function(r){ return matchCo(r, co.frags, co.key) && dateInRange(r.date||''); });
-      var cns = APP.creditData.filter(function(r){ return matchCo(r, co.frags, co.key) && monthInRange(r.month||''); });
-      var g1  = APP.gstr1Data.filter(function(d){ return matchCo(d, co.frags, co.key) && monthInRange(d.month||d.period||''); });
+      var inv  = APP.salesData.filter(function(r){ return matchCo(r, co.frags, co.key) && dateInRange(r.date||''); });
+      var cns  = APP.creditData.filter(function(r){ return matchCo(r, co.frags, co.key) && monthInRange(r.month||''); });
+      var g1raw= APP.gstr1Data.filter(function(d){ return matchCo(d, co.frags, co.key) && monthInRange(d.month||d.period||''); });
+
+      // ── Merge GSTR-1A amendments into GSTR-1 figures ──────────
+      var g1aAll = (APP.gstr1aData||[]).filter(function(a){ return matchCo(a, co.frags, co.key) && monthInRange(a.month||''); });
+      var g1 = g1raw.map(function(d){
+        var a = g1aAll.find(function(a){ return a.coKey===d.coKey && a.month===d.month; });
+        if (!a) return d;
+        var merged = Object.assign({}, d);
+        merged.totalTaxable = (d.totalTaxable||0)+(a.totalTaxable||0);
+        merged.totalIGST    = (d.totalIGST||0)+(a.totalIGST||0);
+        merged.totalCGST    = (d.totalCGST||0)+(a.totalCGST||0);
+        merged.totalSGST    = (d.totalSGST||0)+(a.totalSGST||0);
+        merged.netTaxable=merged.totalTaxable; merged.netIGST=merged.totalIGST;
+        merged.netCGST=merged.totalCGST;       merged.netSGST=merged.totalSGST;
+        return merged;
+      });
+      g1aAll.forEach(function(a){
+        if (!g1raw.some(function(d){ return d.coKey===a.coKey && d.month===a.month; })) g1.push(a);
+      });
+      // ── End GSTR-1A merge ──────────────────────────────────────
+
       function calc(bi, bc, bg1) {
         var ai=adjInv(bi);
         var bT=ai.reduce(function(s,r){return s+(r.taxable||0);},0) - bc.reduce(function(s,r){return s+(r.amount||0);},0);
@@ -4345,7 +4386,7 @@ function updateDashCoRecon() {
       return calc(inv, cns, g1);
     }
     renderTable('dash-g1b-body','dash-g1b-foot',
-      APP.salesData.length||APP.creditData.length||APP.gstr1Data.length,
+      APP.salesData.length||APP.creditData.length||APP.gstr1Data.length||(APP.gstr1aData||[]).length,
       'Sync Sales from Odoo &amp; import GSTR-1 JSON to populate this table.',
       COMPANIES, coData);
   })();
