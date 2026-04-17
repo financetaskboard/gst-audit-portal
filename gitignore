@@ -8,16 +8,13 @@ gst-portal-state.json
 # Odoo credentials — keep these off GitHub
 gst-odoo-settings.json
 
-<<<<<<< HEAD
-# ⚠️  FIREBASE SERVICE ACCOUNT KEY — NEVER commit this to git
+# Firebase Service Account Key — NEVER commit this to git
 # This file gives full read/write access to your Firestore database.
 # Download it locally from Firebase Console → Project Settings → Service Accounts.
 # On Render.com, use the FIREBASE_SERVICE_ACCOUNT environment variable instead.
 serviceAccountKey.json
 *-firebase-adminsdk-*.json
 
-=======
->>>>>>> 302a4ef052685ce5d28bc08ef92a31a268ddb00e
 # OS files
 .DS_Store
 Thumbs.db
