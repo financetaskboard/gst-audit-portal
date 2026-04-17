@@ -7246,9 +7246,10 @@ loadGstr3bState();
         var dp = r.billDate.split('-');
         dispDate = dp[2]+'-'+(MON[parseInt(dp[1],10)]||dp[1])+'-'+dp[0];
       }
-      var isCN = r.isRefund || (r.igst < 0 || r.cgst < 0 || r.sgst < 0 || r.taxable < 0);
-      var rowStyle = isCN ? ' style="background:#fff8f7;"' : '';
+      var isCN  = r.isRefund || (r.igst < 0 || r.cgst < 0 || r.sgst < 0 || r.taxable < 0);
+      var rowStyle = isCN ? ' style="background:#fff8f7;"' : (r.isMisc ? ' style="background:#fffbe6;"' : '');
       var cnBadge  = isCN ? '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">CN</span>' : '';
+      var miscBadge= r.isMisc ? '<span title="MISC Journal Entry" style="background:#fff4ce;color:#835b00;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">MISC</span>' : '';
       var numStyle = isCN ? 'color:#d83b01;font-weight:600' : '';
       var dispPrefix = ((r.moveNo||'')).split('/')[0].toLowerCase().trim();
       var dispCoKey  = (dispPrefix && SERIES_MAP[dispPrefix]) ? SERIES_MAP[dispPrefix] : (r.coKey||'');
@@ -7256,7 +7257,7 @@ loadGstr3bState();
       var seriesOverridden = dispCoKey !== (r.coKey||'') && !!SERIES_MAP[dispPrefix];
       rows += '<tr'+rowStyle+'>'
         + '<td class="left" style="color:var(--muted);font-size:11px;padding:7px 6px 7px 10px">'+(i+1)+'</td>'
-        + '<td class="left"><strong>'+(r.moveNo||'—')+'</strong>'+cnBadge+'</td>'
+        + '<td class="left"><strong>'+(r.moveNo||'—')+'</strong>'+cnBadge+miscBadge+'</td>'
         + '<td class="left" style="white-space:nowrap;font-variant-numeric:tabular-nums">'+dispDate+'</td>'
         + '<td class="left" style="font-family:monospace;font-size:11.5px;color:var(--accent)">'+(r.refNo||'—')+'</td>'
         + '<td class="left" style="font-weight:600;max-width:180px">'+(r.vendorName||'—')+'</td>'
