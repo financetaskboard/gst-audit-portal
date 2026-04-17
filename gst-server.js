@@ -889,9 +889,27 @@ app.post('/api/sync/itc', async (req, res) => {
         // These are MISC entries that offset ITC against GST payable.
         // Identified by narration or reference containing "GST Adjustment"
         // (case-insensitive). Add more keywords to GST_SKIP_KEYWORDS as needed.
-        const GST_SKIP_KEYWORDS = ['gst adjustment', 'gst set off', 'gst setoff', 'gst set-off', 'liability set off'];
-        const narr = ((m.narration || '') + ' ' + (m.ref || '')).toLowerCase();
-        const isGSTSetOff = GST_SKIP_KEYWORDS.some(kw => narr.includes(kw));
+        // ── Skip GST liability set-off / ISD transfer / adjustment entries ─
+        // Matched against narration + reference fields (case-insensitive).
+        // Substring match used for phrases; 'adjustment' alone uses word-boundary
+        // to avoid false positives like "price adjustment for vendor".
+        const GST_SKIP_KEYWORDS = [
+          'gst adjustment',
+          'gst set off',
+          'gst setoff',
+          'gst set-off',
+          'liability set off',
+          'isd transfer',
+          'isd input transfer',
+          'adjustment entry',
+        ];
+        // Also skip if the narration is EXACTLY "adjustment" or "adjustments" (standalone word)
+        const GST_SKIP_EXACT = /^adjustments?$/i;
+
+        const narr = ((m.narration || '') + ' ' + (m.ref || '')).toLowerCase().trim();
+        const narrClean = narr.trim();
+        const isGSTSetOff = GST_SKIP_KEYWORDS.some(kw => narrClean.includes(kw))
+          || GST_SKIP_EXACT.test((m.narration || '').trim());
 
         // MISC entries legitimately have no vendor — only skip if:
         // (a) it's a GST set-off entry (narration match), OR
