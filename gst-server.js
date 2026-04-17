@@ -873,7 +873,7 @@ app.post('/api/sync/itc', async (req, res) => {
       const batchIds = moveIds.slice(i, i + MOVE_BATCH);
       const moves = await odooCall(session, 'account.move', 'read',
         [batchIds],
-        { fields: ['id', 'name', 'ref', 'partner_id', 'date', 'amount_untaxed', 'move_type'] }
+        { fields: ['id', 'name', 'ref', 'partner_id', 'date', 'amount_untaxed', 'move_type', 'narration'] }
       );
       moves.forEach(m => {
         const g = moveGroups[m.id];
@@ -883,22 +883,37 @@ app.post('/api/sync/itc', async (req, res) => {
         g.vendorName = m.partner_id ? m.partner_id[1] : '';
         g.billDate   = m.date || g.billDate;
         g.taxable    = Math.abs(m.amount_untaxed || 0);
-        g.isMisc     = (m.move_type === 'entry');      // MISC journal entry flag
-        // MISC entries legitimately have no vendor — only skip entries that are
-        // neither bills nor MISC (e.g. pure adjustment lines with wrong account)
-        g.isAdjustment = !m.partner_id && !g.isMisc;
+        g.isMisc     = (m.move_type === 'entry');
+
+        // ── Skip GST liability set-off entries ──────────────────
+        // These are MISC entries that offset ITC against GST payable.
+        // Identified by narration or reference containing "GST Adjustment"
+        // (case-insensitive). Add more keywords to GST_SKIP_KEYWORDS as needed.
+        const GST_SKIP_KEYWORDS = ['gst adjustment', 'gst set off', 'gst setoff', 'gst set-off', 'liability set off'];
+        const narr = ((m.narration || '') + ' ' + (m.ref || '')).toLowerCase();
+        const isGSTSetOff = GST_SKIP_KEYWORDS.some(kw => narr.includes(kw));
+
+        // MISC entries legitimately have no vendor — only skip if:
+        // (a) it's a GST set-off entry (narration match), OR
+        // (b) it's a non-MISC entry without a vendor (pure adjustment line)
+        g.isAdjustment = isGSTSetOff || (!m.partner_id && !g.isMisc);
+
+        if (isGSTSetOff) {
+          console.log(`   ⏭ Skipping GST set-off MISC entry: ${m.name} (${m.narration || m.ref || 'no narration'})`);
+        }
       });
     }
 
     const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const round = v => Math.round(v * 100) / 100;
 
-    const allGroups = Object.values(moveGroups);
-    const skipped   = allGroups.filter(g => g.isAdjustment);
-    const bills     = allGroups.filter(g => !g.isAdjustment);
+    const allGroups  = Object.values(moveGroups);
+    const skipped    = allGroups.filter(g => g.isAdjustment);
+    const gstSetOffs = skipped.filter(g => g.isMisc);
+    const bills      = allGroups.filter(g => !g.isAdjustment);
 
     if (skipped.length) {
-      console.log(`   ⚠ Skipped ${skipped.length} adjustment entries:`,
+      console.log(`   ⚠ Skipped ${skipped.length} entries (${gstSetOffs.length} GST set-off MISC, ${skipped.length - gstSetOffs.length} no-vendor adjustments):`,
         skipped.slice(0,5).map(g => g.moveNo).join(', ') + (skipped.length > 5 ? '…' : ''));
     }
 
@@ -935,9 +950,10 @@ app.post('/api/sync/itc', async (req, res) => {
     }).sort((a, b) => (a.billDate || '').localeCompare(b.billDate || ''));
 
     const isdCount    = data.filter(r => r.itcType === 'ISD').length;
-    const normalCount = data.filter(r => r.itcType === 'Normal').length;
-    console.log(`✅ ITC Books: ${data.length} bills (${skipped.length} excluded) — Normal: ${normalCount}, ISD: ${isdCount}`);
-    res.json({ ok: true, count: data.length, skipped: skipped.length, lineCount: allLines.length, data });
+    const miscCount   = data.filter(r => r.isMisc).length;
+    const normalCount = data.filter(r => r.itcType === 'Normal' && !r.isMisc).length;
+    console.log(`✅ ITC Books: ${data.length} entries (${skipped.length} skipped: ${gstSetOffs.length} GST set-off, ${skipped.length-gstSetOffs.length} other) — Normal: ${normalCount}, MISC ITC: ${miscCount}, ISD: ${isdCount}`);
+    res.json({ ok: true, count: data.length, skipped: skipped.length, gstSetOffs: gstSetOffs.length, lineCount: allLines.length, data });
   } catch(e) {
     console.error('❌ ITC sync error:', e.message);
     res.status(400).json({ ok: false, error: e.message });
