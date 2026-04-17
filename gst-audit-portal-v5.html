@@ -3026,116 +3026,113 @@ function showGSTR1APreview(p){
 }
 
 // ── GSTR-1A PDF TEXT PARSER ────────────────────────────────────
-// Handles variations in GST Portal GSTR-1A PDF layouts.
-// Uses regex anchors then scans nearby numeric tokens.
+// Handles the GST Portal "Consolidated Summary of FORM GSTR-1 and GSTR-1A" PDF.
+// The PDF has three types of rows per section:
+//   GSTR-1    [count] Invoice [taxable] [igst] [cgst] [sgst]
+//   GSTR-1A   [count] Invoice [taxable] [igst] [cgst] [sgst]  ← we want THIS
+//   Total (GSTR-1+GSTR-1A)  [count] Invoice [combined] ...   ← NOT this
+// Final summary at end of PDF:
+//   Total - GSTR-1A  [taxable] [igst] [cgst] [sgst]          ← most reliable
 function parseGSTR1AText(rawText){
   const t = rawText.replace(/\s+/g,' ');
 
-  // Helper: grab up to `count` numbers after a regex match
-  function numsAfter(pattern, count, window){
-    const m = t.match(pattern);
-    if(!m) return Array(count).fill(0);
-    const rest   = t.slice(m.index+m[0].length, m.index+m[0].length+(window||400));
-    const tokens = rest.match(/[\d,]+\.[\d]+|[\d,]+/g)||[];
-    const res=[];
-    for(let i=0;i<tokens.length&&res.length<count;i++){
-      const v=parseFloat(tokens[i].replace(/,/g,''));
-      if(!isNaN(v)) res.push(v);
-    }
-    while(res.length<count) res.push(0);
-    return res;
-  }
+  // ── Header ─────────────────────────────────────────────────────
+  // GSTIN appears as "GSTIN 06AAICR3118F1ZM" or "GSTIN of the supplier 06AAICR..."
+  const gstinM = t.match(/GSTIN[^0-9A-Z]{0,30}([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z])/i);
+  const gstin   = gstinM ? gstinM[1].toUpperCase() : '';
 
-  // ── Header ─────────────────────────────────────────────────
-  const gstinM   = t.match(/GSTIN[:\s]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1})/i);
-  const gstin    = gstinM ? gstinM[1].toUpperCase() : '';
+  const nameM   = t.match(/Legal\s+name\s+of\s+(?:the\s+)?(?:registered\s+)?person[:\s]+([A-Z][A-Z\s&.,()'-]{2,80}?)(?=\s{2,}|\s(?:GSTIN|Period|Trade|Tax|Year|Financial|\d))/i);
+  const legalName = nameM ? nameM[1].trim() : '';
 
-  const nameM    = t.match(/Legal\s+name\s+of\s+(?:the\s+)?(?:registered\s+)?(?:person|taxpayer)[:\s]+([A-Za-z][A-Za-z0-9\s&.,()'-]{2,60}?)(?=\s{2,}|(?:GSTIN|Period|Financial|Trade|Return))/i);
-  const legalName= nameM ? nameM[1].trim() : '';
-
-  // Period — "April", "APRIL", etc.
   const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const MSH  =['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const perM = t.match(/Period\s*[:\-]?\s*([A-Za-z]+)/i);
+  // "Tax period March" or "Period March"
+  const perM = t.match(/(?:Tax\s+)?[Pp]eriod\s+([A-Za-z]+)/);
   let monthSh='', calYear='', periodMonth='';
   if(perM){
     periodMonth = perM[1];
     const idx = MFULL.findIndex(m=>m.toLowerCase()===periodMonth.toLowerCase());
-    if(idx>=0){ monthSh=MSH[idx]; }
+    if(idx>=0) monthSh=MSH[idx];
   }
-
-  const fyM  = t.match(/(?:Financial\s+)?Year\s*[:\-]?\s*(20\d\d[-–]\d\d)/i);
-  const fy   = fyM ? fyM[1].replace('–','-') : '';
+  // "Financial year 2025-26" or "Year 2025-26"
+  const fyM = t.match(/(?:Financial\s+)?[Yy]ear\s+(20\d\d[-–]\d\d)/);
+  const fy  = fyM ? fyM[1].replace('–','-') : '';
   if(fy && monthSh){
-    const fyStart = parseInt(fy.split('-')[0]);
-    const mIdx    = MSH.indexOf(monthSh);
-    calYear       = String(mIdx>=3 ? fyStart : fyStart+1);
+    const fyStart=parseInt(fy.split('-')[0]);
+    calYear=String(MSH.indexOf(monthSh)>=3 ? fyStart : fyStart+1);
   }
 
-  // ── Amended section totals ─────────────────────────────────
-  // GSTR-1A PDF summary table order per GST portal:
-  //   Col order: [Records, Taxable Value, IGST, CGST, SGST/UTGST, Cess]
+  // ── Helper: extract exactly N decimal amounts (XX.XX format) ──
+  // This SKIPS plain integers (counts like "1", "2") and "NA" tokens.
+  function decAmts(pattern, count, winSize){
+    const m = t.match(pattern);
+    if(!m) return Array(count).fill(0);
+    const rest  = t.slice(m.index+m[0].length, m.index+m[0].length+(winSize||300));
+    const tokens= rest.match(/[\d,]+\.[\d]{2}/g)||[];   // only decimal amounts XX.XX
+    const res=[];
+    for(let i=0;i<tokens.length&&res.length<count;i++)
+      res.push(parseFloat(tokens[i].replace(/,/g,'')));
+    while(res.length<count) res.push(0);
+    return res;
+  }
 
-  // B2BA — Amended B2B (section 4 or labelled "B2B Invoices - Amended" / "4A,4B,4C,6B,6C-Amnd")
-  const b2ba = numsAfter(/(?:4\s*[A-D,]+\s*(?:6[BC],?\s*)?[-–]?\s*B2B\s+Invoices?\s*(?:[-–]\s*)?(?:Amended|Amnd)|B2B\s+Invoices?\s*(?:[-–]\s*)?(?:Amended|Amnd)|(?:Amended|Amnd)\s*B2B)/i, 5);
+  // ── Strategy 1 (PRIMARY) — Final summary row ───────────────────
+  // At end of PDF: "Total - GSTR-1A 3,86,866.67 69,636.00 0.00 0.00 0.00"
+  // Key: this row has NO count before the first decimal → first token IS taxable
+  // Pattern requires first char after anchor to be a decimal number (not "1 NA")
+  let totalTaxable=0, totalIGST=0, totalCGST=0, totalSGST=0, b2baCount=0;
 
-  // B2CSA — Amended B2CS (section 7 or "B2C Others - Amended")
-  const b2csa= numsAfter(/(?:7\s*[-–]?\s*B2C\s*(?:\(Others?\)|\(Small\))\s*(?:[-–]\s*)?(?:Amended|Amnd)|B2C\s*(?:\(Others?\)|\(Small\))\s*(?:[-–]\s*)?(?:Amended|Amnd)|(?:Amended|Amnd)\s*B2CS)/i, 5);
+  const finalM = t.match(
+    /Total\s*[-–]\s*GSTR-1A\s+([\d,]+\.[\d]{2})\s+([\d,]+\.[\d]{2})\s+([\d,]+\.[\d]{2})\s+([\d,]+\.[\d]{2})/i
+  );
+  if(finalM){
+    totalTaxable = parseFloat(finalM[1].replace(/,/g,''));
+    totalIGST    = parseFloat(finalM[2].replace(/,/g,''));
+    totalCGST    = parseFloat(finalM[3].replace(/,/g,''));
+    totalSGST    = parseFloat(finalM[4].replace(/,/g,''));
+  }
 
-  // B2CLA — Amended B2CL (section 5)
-  const b2cla= numsAfter(/(?:5\s*[-–]?\s*B2C\s*(?:\(Large\)|\(Inter-state\))\s*(?:[-–]\s*)?(?:Amended|Amnd)|B2C\s*(?:Large|Inter[-\s]state)\s*(?:[-–]\s*)?(?:Amended|Amnd)|(?:Amended|Amnd)\s*B2CL)/i, 3);
+  // ── Strategy 2 — HSN summary row ──────────────────────────────
+  // "Total - GSTR-1A 1 NA 3,86,866.67 69,636.00 0.00 0.00 0.00"
+  //                  ^count ^NA skipped by decAmts
+  if(!totalTaxable && !totalIGST){
+    const hsnM = t.match(/Total\s*[-–]\s*GSTR-1A\s+(\d+)\s+NA\s+/i);
+    if(hsnM){
+      b2baCount = parseInt(hsnM[1])||0;
+      const nums = decAmts(/Total\s*[-–]\s*GSTR-1A\s+\d+\s+NA\s+/i, 4, 100);
+      totalTaxable=nums[0]; totalIGST=nums[1]; totalCGST=nums[2]; totalSGST=nums[3];
+    }
+  }
 
-  // EXPA — Amended Exports (section 6A)
-  const expa = numsAfter(/(?:6A\s*[-–]?\s*(?:Exports?\s*)?(?:[-–]\s*)?(?:Amended|Amnd)|Exports?\s*(?:[-–]\s*)?(?:Amended|Amnd)|(?:Amended|Amnd)\s*Exports?)/i, 3);
+  // ── Strategy 3 — Section-level "GSTR-1A N Invoice" row ────────
+  // "GSTR-1A 1 Invoice 3,86,866.67 69,636.00 0.00 0.00 0.00"
+  if(!totalTaxable && !totalIGST){
+    const invM = t.match(/GSTR-1A\s+(\d+)\s+Invoice\s+([\d,]+\.[\d]{2})\s+([\d,]+\.[\d]{2})\s+([\d,]+\.[\d]{2})\s+([\d,]+\.[\d]{2})/i);
+    if(invM){
+      b2baCount    = parseInt(invM[1])||0;
+      totalTaxable = parseFloat(invM[2].replace(/,/g,''));
+      totalIGST    = parseFloat(invM[3].replace(/,/g,''));
+      totalCGST    = parseFloat(invM[4].replace(/,/g,''));
+      totalSGST    = parseFloat(invM[5].replace(/,/g,''));
+    }
+  }
 
-  // CDNRA — Amended Credit/Debit Notes Registered (section 9B)
-  const cdnra= numsAfter(/(?:9B\s*[-–]?\s*Credit\s*\/?\s*Debit\s+Notes?\s*(?:\(Registered\))?\s*(?:[-–]\s*)?(?:Amended|Amnd)|CDN(?:R)?\s*(?:\(Registered\))?\s*(?:[-–]\s*)?(?:Amended|Amnd)|(?:Amended|Amnd)\s*CDNR)/i, 5);
-
-  // CDNURA — Amended Credit/Debit Notes Unregistered
-  const cdnura=numsAfter(/(?:9B\s*[-–]?\s*Credit\s*\/?\s*Debit\s+Notes?\s*(?:\(Unregistered\))\s*(?:[-–]\s*)?(?:Amended|Amnd)|CDNUR\s*(?:[-–]\s*)?(?:Amended|Amnd)|(?:Amended|Amnd)\s*CDNUR)/i, 5);
-
-  // Nil/Exempt Amended
-  const nila = numsAfter(/(?:Nil|Exempt|Non-GST)\s+(?:rated\s+)?(?:supplies?\s+)?(?:[-–]\s*)?(?:Amended|Amnd)/i, 3);
-
-  // ── Try to get Grand Total row from summary (most reliable) ──
-  const grandTotal = numsAfter(/(?:Grand\s+Total|Total\s+(?:Outward\s+)?(?:Taxable|Liability)|Net\s+Taxable)/i, 5);
-
-  // ── Compute net totals ─────────────────────────────────────
-  // CDN sign: values in PDF are absolute; for credit notes these reduce liability
-  // We treat summary rows as net values (portal already applies sign)
-  const b2baTaxable = b2ba[1]||0,  b2baIGST=b2ba[2]||0, b2baCGST=b2ba[3]||0, b2baSGST=b2ba[4]||0;
-  const b2csaTaxable= b2csa[1]||0, b2csaIGST=b2csa[2]||0, b2csaCGST=b2csa[3]||0, b2csaSGST=b2csa[4]||0;
-  const b2claTaxable= b2cla[1]||0, b2claIGST=b2cla[2]||0;
-  const expaTaxable = expa[1]||0,  expaIGST=expa[2]||0;
-  const cdnraTaxable= cdnra[1]||0, cdnraIGST=cdnra[2]||0, cdnraCGST=cdnra[3]||0, cdnraSGST=cdnra[4]||0;
-  const cdnuraTaxable=cdnura[1]||0,cdnuraIGST=cdnura[2]||0;
-  const b2baCount = Math.round(b2ba[0]||0);
-  const b2csaCount= Math.round(b2csa[0]||0);
-  const b2claCount= Math.round(b2cla[0]||0);
-  const expaCount = Math.round(expa[0]||0);
-  const cdnraCount= Math.round(cdnra[0]||0)+Math.round(cdnura[0]||0);
-
-  // Use grand total row if detected and individual sections sum to 0 (fallback)
-  const sectionTax  = b2baTaxable+b2csaTaxable+b2claTaxable+expaTaxable+cdnraTaxable+cdnuraTaxable;
-  const sectionIGST = b2baIGST+b2csaIGST+b2claIGST+expaIGST+cdnraIGST+cdnuraIGST;
-  const sectionCGST = b2baCGST+b2csaCGST+cdnraCGST;
-  const sectionSGST = b2baSGST+b2csaSGST+cdnraSGST;
-
-  const totalTaxable = sectionTax  || grandTotal[1]||0;
-  const totalIGST    = sectionIGST || grandTotal[2]||0;
-  const totalCGST    = sectionCGST || grandTotal[3]||0;
-  const totalSGST    = sectionSGST || grandTotal[4]||0;
+  // ── Count (if not already extracted) ──────────────────────────
+  if(!b2baCount){
+    const cM = t.match(/GSTR-1A\s+(\d+)\s+(?:Invoice|NA)/i);
+    b2baCount = cM ? parseInt(cM[1]) : (totalTaxable>0?1:0);
+  }
 
   return {
-    gstin, legalName, fy, periodMonth, monthSh, year: calYear,
-    b2baCount, b2csaCount, b2claCount, expaCount, cdnraCount,
-    b2baTaxable, b2baIGST, b2baCGST, b2baSGST,
-    b2csaTaxable, b2csaIGST, b2csaCGST, b2csaSGST,
-    b2claTaxable, b2claIGST,
-    expaTaxable, expaIGST,
-    cdnraTaxable, cdnraIGST, cdnraCGST, cdnraSGST,
+    gstin, legalName, fy, periodMonth, monthSh, year:calYear,
+    b2baCount, b2csaCount:0, b2claCount:0, expaCount:0, cdnraCount:0,
+    b2baTaxable:totalTaxable, b2baIGST:totalIGST, b2baCGST:totalCGST, b2baSGST:totalSGST,
+    b2csaTaxable:0,b2csaIGST:0,b2csaCGST:0,b2csaSGST:0,
+    b2claTaxable:0,b2claIGST:0,
+    expaTaxable:0,expaIGST:0,
+    cdnraTaxable:0,cdnraIGST:0,cdnraCGST:0,cdnraSGST:0,
     totalTaxable, totalIGST, totalCGST, totalSGST,
-    _parsedByPDF: true
+    _parsedByPDF:true
   };
 }
 
