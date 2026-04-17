@@ -383,7 +383,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
     </div>
 
     <div class="sec-lbl">Input Reconciliation</div>
-    <div class="ni ni-recon" onclick="switchDashboard('input');showPage('home');document.getElementById('dash-tab-input').click()">
+    <div class="ni ni-recon" onclick="openG2BRecon()">
       <span class="ic">📥</span> Books vs GSTR-2B
       <span class="ext-icon">↗</span>
     </div>
@@ -645,7 +645,10 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
               <span class="thdr-title" style="font-size:13px">Books Input (ITC) vs GSTR-2B</span>
               <span class="thdr-sub">Compare Odoo ITC receivable accounts against GSTR-2B auto-populated data — company &amp; branch wise</span>
             </div>
-            <button class="btn btn-default" style="font-size:11px;padding:4px 10px" onclick="openITCSyncModal()">🔗 Sync ITC from Odoo</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button class="btn btn-default" style="font-size:11px;padding:4px 10px" onclick="openITCSyncModal()">🔗 Sync ITC</button>
+              <button class="btn btn-default" style="font-size:11px;padding:4px 10px" onclick="openG2BRecon()">Open Recon ↗</button>
+            </div>
           </div>
           <div class="twrap" id="inp-bvsg2b-wrap">
             <div style="text-align:center;color:var(--muted);padding:18px;font-size:12px">Sync Purchase Bills from Odoo &amp; import GSTR-2B JSON to populate this table.</div>
@@ -1238,6 +1241,23 @@ var SERIES_MAP = {
   // Add more as needed: 'PREFIX_LOWERCASE': 'company_key'
 };
 
+// ── Popup helper: open HTML in new tab, with blob fallback if popup blocked ──
+function openPopupHTML(html, filename) {
+  var w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); return; }
+  // Popup blocked — use Blob URL fallback
+  try {
+    var blob = new Blob([html], {type:'text/html'});
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href=url; a.target='_blank'; a.rel='noopener'; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+  } catch(e) {
+    toast('⚠️ Popup blocked — allow popups for this page', '⚠️');
+  }
+}
+
+
 // ── Company display names for SERIES_MAP overrides ─────────────
 var CO_NAMES_MAP = {
   gsl:   'Ginni Systems Ltd',
@@ -1507,7 +1527,10 @@ function updateInputDash() {
       }
 
       tbody += '<tr style="cursor:default">'
-        + '<td style="padding:7px 12px;text-align:left;font-size:12px;font-weight:700;border-bottom:1px solid #f3f2f1;white-space:nowrap">'+co.label+expandBtn+'</td>'
+        + '<td style="padding:7px 12px;text-align:left;font-size:12px;font-weight:700;border-bottom:1px solid #f3f2f1;white-space:nowrap">'+co.label+expandBtn
+        + ' <button onclick="openG2BRecon(\''+co.key+'\')" '
+        + 'style="font-size:10px;font-weight:600;color:var(--accent);background:transparent;border:1px solid rgba(0,120,212,0.3);border-radius:3px;padding:1px 7px;cursor:pointer;margin-left:6px;font-family:inherit;vertical-align:middle">↗ Recon</button>'
+        + '</td>'
         + v.slice(0,4).map(function(x){ return td(fv(x),'#e8f4fd'); }).join('')
         + v.slice(4,8).map(function(x){ return td(fv(x),'#dff6dd'); }).join('')
         + v.slice(8,12).map(function(x){ return td(dc(x),'#fff4ce'); }).join('')
@@ -6896,9 +6919,7 @@ loadGstr3bState();
       +'<div style="padding:16px 20px">'+bodyHTML+'</div>'
       +'<scr'+'ipt>'+fjs+'</scr'+'ipt>'
       +'</body></html>';
-    var w=window.open('','_blank');
-    if(w){ w.document.write(html); w.document.close(); }
-    else toast('&#9888;&#65039; Popup blocked','&#9888;&#65039;');
+    openPopupHTML(html, 'GSTR1_vs_GSTR3B');
   };
 
   /* ── RCM vs GSTR-3B Reconciliation (company & branch-wise, filterable) */
@@ -8607,9 +8628,7 @@ window.openG2BRecon = function(filterCoKey, filterMonth) {
     +'<script>'+filterFn+'</s'+'cript>'
     +'</body></html>';
 
-  var w = window.open('', '_blank');
-  if (w) { w.document.write(html); w.document.close(); }
-  else toast('\u26a0\ufe0f Popup blocked \u2014 allow popups for this page', '\u26a0\ufe0f');
+  openPopupHTML(html, 'G2B_Books_Recon');
 };
 
 /* ── GSTR-2B Tab switcher ──────────────────────────────────── */
