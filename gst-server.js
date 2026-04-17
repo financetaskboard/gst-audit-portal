@@ -215,6 +215,8 @@ const BRANCH_MAP = {
   'DMH':'Maharashtra',  'DTL':'Telangana',
   // ── Ginni Systems — BILL journal (Haryana HO) ─────────────────
   'BILL':'Haryana',
+  // ── Ginni Systems — GOA branch ───────────────────────────────
+  'BGO':'Goa',
   // ── Browntape — Sales, Credit & Purchase journals ─────────────
   'SBTM':'Goa',         'CMS':'Goa',        'SBTE':'Goa',
   'SBT':'Goa',          'CENT':'Goa',       'CDIY':'Goa',
@@ -243,6 +245,8 @@ const COMPANY_MAP = {
   'DTL':'Ginni Systems Ltd',
   // ── Ginni Systems — BILL journal (Haryana HO) ─────────────────
   'BILL':'Ginni Systems Ltd',
+  // ── Ginni Systems — GOA branch ───────────────────────────────
+  'BGO':'Ginni Systems Ltd',
   // ── Browntape ────────────────────────────────────────────────
   'SBTM':'Browntape Infrosolution Pvt Ltd', 'CMS':'Browntape Infrosolution Pvt Ltd',
   'SBTE':'Browntape Infrosolution Pvt Ltd', 'SBT':'Browntape Infrosolution Pvt Ltd',
@@ -265,7 +269,7 @@ const COKEY_MAP = {
   'BWB':'gsl', 'BHR':'gsl',  'BTL':'gsl',   'BMH':'gsl',  'BKN':'gsl',
   // ── Ginni debit notes & BILL ─────────────────────────────────
   'DHR':'gsl', 'DKN':'gsl',  'DWB':'gsl',   'DMH':'gsl',  'DTL':'gsl',
-  'BILL':'gsl',
+  'BILL':'gsl', 'BGO':'gsl',
   // ── Browntape ────────────────────────────────────────────────
   'SBTM':'bt', 'CMS':'bt',   'SBTE':'bt',   'SBT':'bt',
   'CENT':'bt', 'CDIY':'bt',  'BTBIL':'bt',  'MISBT':'bt',
@@ -839,6 +843,12 @@ app.post('/api/sync/itc', async (req, res) => {
       if (!moveGroups[moveId]) {
         const brInfo    = getBranch(moveNo);
         const usePrefix = (brInfo.coKey !== 'other');
+        // For MISC entries (move_type='entry'), prefix won't match known journals.
+        // Fall back to account-code company; Ginni Systems MISC → default Haryana branch.
+        const isMiscEntry = !usePrefix;   // prefix not in maps = MISC-style entry
+        const resolvedCoKey = usePrefix ? brInfo.coKey : acInfo.coKey;
+        const defaultBranch = (resolvedCoKey === 'gsl' && isMiscEntry) ? 'Haryana' : brInfo.branch;
+
         moveGroups[moveId] = {
           moveId,
           moveNo,
@@ -846,11 +856,11 @@ app.post('/api/sync/itc', async (req, res) => {
           refNo:        '',
           vendorName:   '',
           isAdjustment: false,
-          isMisc:       false,          // set to true for 'entry' type moves
+          isMisc:       false,
           itcType:      acInfo.itcType || 'Normal',
-          branch:       brInfo.branch,
+          branch:       usePrefix ? brInfo.branch : defaultBranch,
           company:      usePrefix ? brInfo.company : acInfo.company,
-          coKey:        usePrefix ? brInfo.coKey   : acInfo.coKey,
+          coKey:        resolvedCoKey,
           taxable:      0,
           igst:         0,
           cgst:         0,
