@@ -340,8 +340,23 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
     </div>
   </div>
 
+  <!-- GSTR-1A (Amendment Return) -->
+  <div class="dtab" id="dtab-gstr1a" onclick="switchDataTab('gstr1a',this)">
+    <span class="ic">📝</span> GSTR-1A
+    <span class="dtab-badge warn" id="dtab-g1a-badge" style="display:none">0</span>
+    <div class="dtab-menu">
+      <div class="dm-item" onclick="event.stopPropagation();showPage('gstr1a-view');switchDataTab('gstr1a',document.getElementById('dtab-gstr1a'))">
+        <span class="ic">📋</span> View Amendments
+      </div>
+      <div class="dm-item" onclick="event.stopPropagation();showPage('gstr1a-upload');switchDataTab('gstr1a',document.getElementById('dtab-gstr1a'))">
+        <span class="ic">⬆️</span> Upload JSON
+      </div>
+    </div>
+  </div>
+
   <div class="databar-right">
     <button class="dbtn primary" onclick="showPage('gstr1-upload');switchDataTab('gstr1',document.getElementById('dtab-gstr1'))">⬆️ Import GSTR-1</button>
+    <button class="dbtn" style="border-color:rgba(230,168,23,0.5);color:#e6a817" onclick="showPage('gstr1a-upload');switchDataTab('gstr1a',document.getElementById('dtab-gstr1a'))">📝 Import GSTR-1A</button>
   </div>
 </div>
 
@@ -913,6 +928,148 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
       </div>
     </div>
 
+    <!-- ═══ GSTR-1A UPLOAD ═══ -->
+    <div id="page-gstr1a-upload" class="page">
+      <div class="ptb">
+        <div class="pdot" style="background:var(--gold)"></div>
+        <span class="ptitle">GSTR-1A — Upload Amendment JSON</span>
+        <span class="pbc">/ GST Portal Amendment Return Import</span>
+        <div class="tbr">
+          <button class="btn btn-default" onclick="showPage('gstr1a-view')">📋 View Amendments</button>
+          <button class="btn btn-danger" onclick="clearGSTR1AData()">🗑 Clear All</button>
+        </div>
+      </div>
+      <div class="page-inner">
+        <div class="info-box">
+          <strong>📝 What is GSTR-1A?</strong> GSTR-1A is the amendment return filed to correct errors in an already-submitted GSTR-1. It contains amended invoice records under keys
+          <code>b2ba</code>, <code>b2csa</code>, <code>b2cla</code>, <code>expa</code>, <code>cdnra</code>, <code>cdnura</code>, <code>nila</code> (note the "<strong>a</strong>" suffix).<br>
+          <strong>How to get:</strong> gst.gov.in → Returns → GSTR-1A → Select Month &amp; Year → Download JSON → Upload here.
+          The amendment totals will be <strong>added to</strong> the corresponding GSTR-1 period for reconciliation.
+        </div>
+
+        <!-- Upload panel -->
+        <div class="sync-panel">
+          <div class="sync-title">📝 Upload GSTR-1A Amendment JSON File</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Select the company and the period being <strong>amended</strong> (same month as the original GSTR-1 you filed). Upload one JSON per company per month.</div>
+          <div class="upload-zone" id="g1a-drop-zone" onclick="document.getElementById('json-inp-1a').click()" ondragover="event.preventDefault();this.style.borderColor='var(--gold)'" ondragleave="this.style.borderColor=''" ondrop="handleGSTR1AJSONDrop(event)">
+            <div class="upload-icon">📝</div>
+            <div class="upload-text">Click or drag &amp; drop GSTR-1A JSON or ZIP file</div>
+            <div class="upload-sub">.json or .zip downloaded from GST Portal — contains amendment records (b2ba, b2csa, etc.)</div>
+            <input type="file" id="json-inp-1a" accept=".json,.zip" style="display:none" onchange="handleGSTR1AJSON(this)"/>
+          </div>
+          <div class="upload-ok" id="upload-ok-1a" style="display:none">✅ File loaded: <strong id="fname-1a"></strong></div>
+          <div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-top:10px">
+            <div class="fg">
+              <label class="flabel">Company (being amended)</label>
+              <select class="finput" id="g1a-company">
+                <option value="gsl">Ginni Systems Ltd</option>
+                <option value="em">Easemy Business Pvt Ltd</option>
+                <option value="bt">Browntape Infrosolution Pvt Ltd</option>
+                <option value="roxfo">Roxfortech Infosolutions Pvt Ltd</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="flabel">Original Period (Month being amended)</label>
+              <select class="finput" id="g1a-month">
+                <option value="Apr">April</option><option value="May">May</option><option value="Jun">June</option>
+                <option value="Jul">July</option><option value="Aug">August</option><option value="Sep">September</option>
+                <option value="Oct">October</option><option value="Nov">November</option><option value="Dec">December</option>
+                <option value="Jan">January</option><option value="Feb">February</option><option value="Mar">March</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="flabel">Year</label>
+              <select class="finput" id="g1a-year">
+                <option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="flabel">Financial Year</label>
+              <select class="finput" id="g1a-fy">
+                <option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option>
+              </select>
+            </div>
+          </div>
+          <div class="sync-actions" style="margin-top:12px">
+            <button class="btn" style="background:var(--gold);color:#1a1a2e;border-color:var(--gold)" onclick="importGSTR1AJSON()">📝 Import &amp; Parse Amendment JSON</button>
+            <span class="sync-info" id="g1a-import-status">No file selected</span>
+          </div>
+        </div>
+
+        <!-- Import History -->
+        <div class="tcard">
+          <div class="thdr">
+            <span class="thdr-title">GSTR-1A Amendment Import History</span>
+            <span class="thdr-sub" id="g1a-history-count">0 amendment files imported</span>
+          </div>
+          <div class="twrap"><table>
+            <thead><tr class="simple-hdr">
+              <th class="left">Imported On</th><th class="left">Company</th><th class="left">GSTIN</th>
+              <th class="left">Amends Period</th><th class="left">FY</th>
+              <th>B2BA #</th><th>B2CSA #</th><th>CDNRA #</th>
+              <th>Amend Taxable</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="g1a-history-body">
+              <tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No GSTR-1A files imported yet. Upload a GSTR-1A JSON above.</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GSTR-1A VIEW ═══ -->
+    <div id="page-gstr1a-view" class="page">
+      <div class="ptb">
+        <div class="pdot" style="background:var(--gold)"></div>
+        <span class="ptitle">GSTR-1A — Amendment Data</span>
+        <span class="pbc" id="g1av-pbc">/ No amendment data imported yet</span>
+        <div class="tbr">
+          <select class="fsel" id="g1av-co-filter" onchange="renderGSTR1AView()">
+            <option value="all">All Companies</option>
+            <option value="gsl">Ginni Systems Ltd</option>
+            <option value="em">Easemy Business Pvt Ltd</option>
+            <option value="bt">Browntape Infrosolution Pvt Ltd</option>
+            <option value="roxfo">Roxfortech Infosolutions Pvt Ltd</option>
+          </select>
+          <select class="fsel" id="g1av-fy-filter" onchange="renderGSTR1AView()">
+            <option value="all">All FYs</option>
+            <option value="2025-26">FY 2025-26</option>
+            <option value="2024-25">FY 2024-25</option>
+          </select>
+          <button class="btn btn-default" onclick="showPage('gstr1a-upload')">⬆️ Upload More</button>
+          <button class="btn btn-success" onclick="exportGSTR1ACSV()">📤 Export CSV</button>
+        </div>
+      </div>
+      <div class="page-inner">
+        <div class="kpi-row">
+          <div class="kpi" style="border-top-color:var(--gold)"><div class="kpi-lbl">Amendment Files</div><div class="kpi-val" style="color:var(--gold)" id="g1av-files">0</div><div class="kpi-sub">GSTR-1A JSON files</div></div>
+          <div class="kpi" style="border-top-color:var(--gold)"><div class="kpi-lbl">B2BA (Amended B2B)</div><div class="kpi-val" style="color:var(--gold)" id="g1av-b2ba">—</div><div class="kpi-sub">Amended invoices</div></div>
+          <div class="kpi" style="border-top-color:var(--gold)"><div class="kpi-lbl">Amended Taxable</div><div class="kpi-val" style="color:var(--gold)" id="g1av-taxable">—</div><div class="kpi-sub">Net amended value</div></div>
+          <div class="kpi" style="border-top-color:var(--gold)"><div class="kpi-lbl">Amended GST</div><div class="kpi-val" style="color:var(--gold)" id="g1av-gst">—</div><div class="kpi-sub">CGST+SGST+IGST</div></div>
+        </div>
+        <div class="warn-box" style="background:#fffbe6;border-color:var(--gold)">
+          ⚠️ <strong>Important:</strong> GSTR-1A contains the <em>corrected</em> invoice values for the amended records. In reconciliation, these amendment totals are <strong>shown as a separate adjustment row</strong> alongside the original GSTR-1 — allowing you to see the combined effective liability.
+        </div>
+        <div class="tcard" id="g1av-summary-card">
+          <div class="thdr">
+            <span class="thdr-title">Amendment Summary — Company × Period</span>
+            <span class="thdr-sub">All imported GSTR-1A data aggregated</span>
+          </div>
+          <div class="twrap"><table>
+            <thead><tr class="simple-hdr">
+              <th class="left">Company</th><th class="left">GSTIN</th><th class="left">Amends Period</th><th class="left">FY</th>
+              <th>B2BA #</th><th>B2CSA #</th><th>CDNRA #</th>
+              <th>Taxable</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Total GST</th>
+              <th class="left">Original GSTR-1?</th>
+            </tr></thead>
+            <tbody id="g1av-summary-body">
+              <tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">No GSTR-1A data imported. Go to Upload JSON first.</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══ SUMMARY ═══ -->
     <div id="page-summary" class="page">
       <div class="ptb">
@@ -942,6 +1099,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
   <div class="sbar">
     <div class="sitem"><div class="sdot" style="background:var(--gold)"></div>Odoo: Not Synced</div>
     <div class="sitem"><div class="sdot" style="background:var(--accent)"></div>GSTR-1: No Data</div>
+    <div class="sitem" id="sbar-g1a"><div class="sdot" style="background:var(--muted)"></div>GSTR-1A: No Data</div>
     <div class="sitem" id="sbar-mismatch"><div class="sdot" style="background:var(--muted)"></div>Sync required</div>
     <div style="margin-left:auto;color:var(--light);font-size:11px;" id="sbar-lastsync">Last sync: Never</div>
   </div>
@@ -1025,6 +1183,7 @@ const APP = {
   salesData: [],
   creditData: [],
   gstr1Data: [],          // Array of { company, coKey, gstin, month, year, fy, b2b:[], b2cs:[], cdnr:[], importedOn, ... }
+  gstr1aData: [],         // Array of GSTR-1A amendment entries (same shape as gstr1Data but from b2ba/b2csa/etc. keys)
   gstr3bData: [],         // always defined — never undefined
   rcmData: [],            // always defined — never undefined
   gstr2bData: [],         // GSTR-2B JSON imports (ITC register)
@@ -1911,11 +2070,37 @@ function buildReconG1Books() {
   });
   var cns  = APP.creditData;
   // Normalise any old-format months ("Apr" → "Apr 2025") before reconciliation
-  var g1s  = APP.gstr1Data.map(function(d) {
-    if (d.month && d.year && !/\d{4}/.test(d.month)) {
-      return Object.assign({}, d, { month: d.month + ' ' + d.year, period: d.month + ' ' + d.year });
+  // Build effective GSTR-1 totals — merges GSTR-1A amendments when present
+  var g1s = APP.gstr1Data.map(function(d) {
+    var entry = d.month && d.year && !/\d{4}/.test(d.month)
+      ? Object.assign({}, d, { month: d.month + ' ' + d.year, period: d.month + ' ' + d.year })
+      : Object.assign({}, d);
+    // Overlay GSTR-1A amendment totals if available for same company+month
+    var g1a = APP.gstr1aData.find(function(a){ return a.coKey===entry.coKey && a.month===entry.month; });
+    if (g1a) {
+      entry._hasAmendment = true;
+      entry._g1aLabel     = '+ 1A';
+      entry.totalTaxable += g1a.totalTaxable;
+      entry.totalCGST    += g1a.totalCGST;
+      entry.totalSGST    += g1a.totalSGST;
+      entry.totalIGST    += g1a.totalIGST;
+      entry.netTaxable   = entry.totalTaxable;
+      entry.netCGST      = entry.totalCGST;
+      entry.netSGST      = entry.totalSGST;
+      entry.netIGST      = entry.totalIGST;
     }
-    return d;
+    return entry;
+  });
+  // Also include standalone GSTR-1A entries (where no GSTR-1 was uploaded for that period)
+  APP.gstr1aData.forEach(function(a){
+    var already = g1s.some(function(g){ return g.coKey===a.coKey && g.month===a.month; });
+    if (!already) {
+      g1s.push(Object.assign({}, a, {
+        _hasAmendment:true, _standaloneAmend:true, _g1aLabel:'1A only',
+        totalTaxable:a.totalTaxable, totalCGST:a.totalCGST, totalSGST:a.totalSGST, totalIGST:a.totalIGST,
+        netTaxable:a.totalTaxable, netCGST:a.totalCGST, netSGST:a.totalSGST, netIGST:a.totalIGST
+      }));
+    }
   });
 
   // FY label from sync date range
@@ -2040,6 +2225,11 @@ function buildReconG1Books() {
     var g1Sg=g.g1s.reduce(function(s,d){return s+d.totalSGST;},0);
     var g1Ig=g.g1s.reduce(function(s,d){return s+d.totalIGST;},0);
     var dT=nT-g1T,dCg=nCg-g1Cg,dSg=nSg-g1Sg,dIg=nIg-g1Ig;
+    // Show 1A badge if any of this company's g1s entries have amendments merged
+    var has1A = g.g1s.some(function(d){return d._hasAmendment;});
+    var g1Label = has1A
+      ? 'GSTR-1 <span style="background:#e6a817;color:#1a1a2e;font-size:9px;font-weight:800;padding:1px 5px;border-radius:2px;vertical-align:middle">incl.1A</span>'
+      : 'GSTR-1';
     gNT+=nT;gNCg+=nCg;gNSg+=nSg;gNIg+=nIg;gG1T+=g1T;gG1Cg+=g1Cg;gG1Sg+=g1Sg;gG1Ig+=g1Ig;
     sumRows += '<tr><td class="L"><b>'+g.name+'</b></td><td class="L" style="font-family:monospace;font-size:11px">'+g.gstin+'</td>'
       +'<td class="gi">'+g.inv.length+'</td><td class="gc">'+g.cns.length+'</td><td class="gg">'+g.g1s.length+'</td>'
@@ -2050,8 +2240,10 @@ function buildReconG1Books() {
   });
   var gdT=gNT-gG1T,gdCg=gNCg-gG1Cg,gdSg=gNSg-gG1Sg,gdIg=gNIg-gG1Ig;
 
+  var any1A = APP.gstr1aData.length > 0;
   var summaryHtml = '<div class="sum-card">'
-    +'<div class="thdr"><span class="tt">Grand Summary &#8212; All Companies</span><span class="ts">Net Books vs GSTR-1</span></div>'
+    +'<div class="thdr"><span class="tt">Grand Summary &#8212; All Companies</span><span class="ts">Net Books vs GSTR-1'+(any1A?' (&#9733; incl. GSTR-1A amendments)':'')+'</span></div>'
+    +(any1A ? '<div style="background:#fffbe6;border:1px solid #e6a817;border-radius:3px;padding:7px 12px;font-size:11.5px;color:#835b00;margin:8px 14px"><b>&#9733; GSTR-1A Applied:</b> '+APP.gstr1aData.length+' amendment file(s) found. Months marked <span style="background:#e6a817;color:#1a1a2e;font-size:9px;font-weight:800;padding:0 4px;border-radius:2px">1A</span> have GSTR-1A corrections merged into the GSTR-1 column. The figures shown are <em>effective</em> (GSTR-1 + GSTR-1A adjustment).</div>' : '')
     +'<div class="sc"><table><thead><tr>'
     +'<th class="L">Company</th><th class="L">GSTIN</th>'
     +'<th class="gi">Inv#</th><th class="gc">CN#</th><th class="gg">G1 Months</th>'
@@ -2133,9 +2325,11 @@ function buildReconG1Books() {
       var g1Cg=g1m.reduce(function(s,d){return s+d.totalCGST;},0);
       var g1Sg=g1m.reduce(function(s,d){return s+d.totalSGST;},0);
       var g1Ig=g1m.reduce(function(s,d){return s+d.totalIGST;},0);
+      var moHas1A = g1m.some(function(d){return d._hasAmendment;});
+      var moLabel = mo + (moHas1A ? ' <span style="background:#e6a817;color:#1a1a2e;font-size:9px;font-weight:800;padding:0 4px;border-radius:2px">1A</span>' : '');
       totNT+=nT;totNCg+=nCg;totNSg+=nSg;totNIg+=nIg;
       totG1T+=g1T;totG1Cg+=g1Cg;totG1Sg+=g1Sg;totG1Ig+=g1Ig;
-      moBody += recon3ColRow(mo, false,
+      moBody += recon3ColRow(moLabel, false,
         {t:nT, ig:nIg, cg:nCg, sg:nSg},
         {t:g1T, ig:g1Ig, cg:g1Cg, sg:g1Sg},
         {t:nT-g1T, ig:nIg-g1Ig, cg:nCg-g1Cg, sg:nSg-g1Sg}
@@ -2331,6 +2525,8 @@ function showPage(id){
   // Refresh GSTR-1 pages when navigated to
   if(id==='gstr1-upload'){loadGSTINMap();renderGSTR1History();updateG1BranchList();}
   if(id==='gstr1-view'){renderGSTR1View();}
+  if(id==='gstr1a-upload'){loadGSTINMap();renderGSTR1AHistory();updateG1ABadge();}
+  if(id==='gstr1a-view'){renderGSTR1AView();}
   if(id==='gstr3b-upload'){if(typeof updateG3BBranchList==='function')updateG3BBranchList();if(typeof renderGSTR3BHistory==='function')renderGSTR3BHistory();}
   if(id==='gstr3b-view' && typeof renderGSTR3BView==='function'){renderGSTR3BView();}
   if(id==='rcm-view' && typeof window.renderRCMTable==='function'){window.renderRCMTable();}
@@ -2343,7 +2539,7 @@ function showPageSidebar(id,el){
 function switchDataTab(id,el){
   document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
   if(el) el.classList.add('active');
-  const map={sales:'sales-view',credit:'credit-view',gstr1:'gstr1-upload'};
+  const map={sales:'sales-view',credit:'credit-view',gstr1:'gstr1-upload',gstr1a:'gstr1a-upload'};
   if(map[id]) showPage(map[id]);
 }
 
@@ -2608,18 +2804,22 @@ function renderGSTR1History(){
   if(!body) return;
   const coNames={gsl:'Ginni Systems Ltd',em:'Easemy Business Pvt Ltd',bt:'Browntape Infrosolution Pvt Ltd',roxfo:'Roxfortech Infosolutions Pvt Ltd'};
   if(!APP.gstr1Data.length){
-    body.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">No files imported yet.</td></tr>';
+    body.innerHTML='<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No files imported yet.</td></tr>';
     document.getElementById('g1-history-count').textContent='0 files imported';
     return;
   }
   document.getElementById('g1-history-count').textContent=APP.gstr1Data.length+' file(s) imported';
-  body.innerHTML=APP.gstr1Data.map((d,i)=>`
-    <tr>
+  body.innerHTML=APP.gstr1Data.map((d,i)=>{
+    const has1A = APP.gstr1aData.some(a=>a.coKey===d.coKey&&a.month===d.month);
+    const periodCell = has1A
+      ? `${d.period} <span style="background:#e6a817;color:#1a1a2e;font-size:9px;font-weight:800;padding:1px 5px;border-radius:2px;cursor:pointer" title="GSTR-1A amendment uploaded for this period — click to view" onclick="showPage('gstr1a-view');switchDataTab('gstr1a',document.getElementById('dtab-gstr1a'))">1A ↗</span>`
+      : d.period;
+    return `<tr>
       <td class="left" style="font-size:11px">${d.importedOn}</td>
       <td class="left">${d.coName}</td>
       <td class="left"><span style="background:#e8f4fd;color:#004e8c;padding:1px 6px;border-radius:2px;font-size:11px">${d.branch||'Company-level'}</span></td>
       <td class="left" style="font-family:monospace;font-size:11px">${d.gstin||'—'}</td>
-      <td class="left">${d.period}</td>
+      <td class="left">${periodCell}</td>
       <td class="left">${d.fy}</td>
       <td>${d.b2bCount}</td>
       <td>${d.b2cCount}</td>
@@ -2627,9 +2827,10 @@ function renderGSTR1History(){
       <td>${fINR(d.totalCGST)}</td>
       <td>${fINR(d.totalSGST)}</td>
       <td>${fINR(d.totalIGST)}</td>
-      <td><span class="tag tag-ok">✓ Parsed</span></td>
+      <td><span class="tag tag-ok">✓ Parsed</span>${has1A?'<span class="tag tag-warn" style="margin-left:4px">+ 1A</span>':''}</td>
       <td><button class="btn btn-danger" style="padding:2px 8px;font-size:11px" onclick="deleteGSTR1(${i})">🗑</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function renderGSTR1View(){
@@ -2710,6 +2911,413 @@ function exportGSTR1CSV(){
   const csv=rows.map(r=>r.join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='gstr1_import_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
+
+// ══════════════════════════════════════════════════════════════
+// ── GSTR-1A (AMENDMENT RETURN) MODULE ─────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+let g1aPendingFile = null;
+
+// ── File loader: ZIP or JSON ───────────────────────────────────
+async function processGSTR1AFile(file) {
+  const name = file.name.toLowerCase();
+  const statusEl = document.getElementById('g1a-import-status');
+  const okEl     = document.getElementById('upload-ok-1a');
+  const fnEl     = document.getElementById('fname-1a');
+
+  if (name.endsWith('.zip')) {
+    if(statusEl) statusEl.textContent = '📦 Extracting ZIP...';
+    try {
+      const zip       = await JSZip.loadAsync(file);
+      const jsonFiles = Object.keys(zip.files).filter(f => f.toLowerCase().endsWith('.json') && !zip.files[f].dir);
+      if (!jsonFiles.length) { toast('❌ No JSON file found inside ZIP','❌'); return; }
+      const jName   = jsonFiles[0];
+      const jText   = await zip.files[jName].async('string');
+      g1aPendingFile = new File([jText], jName, { type: 'application/json' });
+      if(okEl) okEl.style.display = 'block';
+      if(fnEl) fnEl.textContent = file.name + '  →  ' + jName;
+      if(statusEl) statusEl.textContent = '📄 Extracted: ' + jName + ' — select company/period and click Import';
+    } catch(err) {
+      toast('❌ ZIP error: ' + err.message,'❌');
+      if(statusEl) statusEl.textContent = '❌ ZIP error: ' + err.message;
+    }
+  } else if (name.endsWith('.json')) {
+    g1aPendingFile = file;
+    if(okEl) okEl.style.display = 'block';
+    if(fnEl) fnEl.textContent = file.name;
+    if(statusEl) statusEl.textContent = '📄 File ready — select company/period and click Import';
+  } else {
+    toast('❌ Please upload a .json or .zip file','❌');
+    if(statusEl) statusEl.textContent = '❌ Unsupported file type — use .json or .zip';
+  }
+}
+function handleGSTR1AJSON(inp){ if(inp.files.length) processGSTR1AFile(inp.files[0]); }
+function handleGSTR1AJSONDrop(e){
+  e.preventDefault();
+  document.getElementById('g1a-drop-zone').style.borderColor='';
+  if(e.dataTransfer.files.length) processGSTR1AFile(e.dataTransfer.files[0]);
+}
+
+// ── Parse GSTR-1A JSON ─────────────────────────────────────────
+// Amended section keys:  b2ba  b2csa  b2cla  expa  cdnra  cdnura  nila
+// Each amended invoice also carries oinum/oidt (original invoice ref) but
+// the taxable/GST values are the CORRECTED full amounts for that invoice.
+function parseGSTR1AJSON(raw, coKey, coName, gstin, period, month, year, fy){
+
+  let b2baTaxable=0,  b2baCGST=0,  b2baSGST=0,  b2baIGST=0,  b2baCount=0;
+  let b2csaTaxable=0, b2csaCGST=0, b2csaSGST=0, b2csaIGST=0, b2csaCount=0;
+  let b2claTaxable=0, b2claIGST=0, b2claCount=0;
+  let expaTaxable=0,  expaIGST=0,  expaCount=0;
+  let nilaTaxable=0;
+  let cdnraTaxable=0, cdnraCGST=0, cdnraSGST=0, cdnraIGST=0, cdnraCount=0;
+  let cdnraNetTaxable=0, cdnraNetCGST=0, cdnraNetSGST=0, cdnraNetIGST=0;
+
+  const b2baRows=[], b2csaRows=[], b2claRows=[], expaRows=[], cdnraRows=[];
+
+  // ── b2ba (Amended B2B) ─────────────────────────────────────
+  (raw.b2ba||[]).forEach(buyer=>{
+    (buyer.inv||[]).forEach(inv=>{
+      let txval=0,iamt=0,camt=0,samt=0;
+      (inv.itms||[]).forEach(it=>{ const d=it.itm_det||it; txval+=(d.txval||0);iamt+=(d.iamt||0);camt+=(d.camt||0);samt+=(d.samt||0); });
+      b2baTaxable+=txval; b2baCGST+=camt; b2baSGST+=samt; b2baIGST+=iamt; b2baCount++;
+      b2baRows.push({ gstin:buyer.ctin, origInvNo:inv.oinum||'', origInvDate:inv.oidt||'',
+        invNo:inv.inum, invDate:inv.idt, taxable:txval, cgst:camt, sgst:samt, igst:iamt, total:inv.val });
+    });
+  });
+
+  // ── b2csa (Amended B2CS) ────────────────────────────────────
+  (raw.b2csa||[]).forEach(r=>{
+    b2csaTaxable+=(r.txval||0); b2csaCGST+=(r.camt||0); b2csaSGST+=(r.samt||0); b2csaIGST+=(r.iamt||0); b2csaCount++;
+    b2csaRows.push({ state:r.pos, supplyType:r.sply_tp, origMonth:r.omon||'',
+      taxable:r.txval||0, cgst:r.camt||0, sgst:r.samt||0, igst:r.iamt||0 });
+  });
+
+  // ── b2cla (Amended B2CL) ────────────────────────────────────
+  (raw.b2cla||[]).forEach(entry=>{
+    (entry.inv||[]).forEach(inv=>{
+      let txval=0,iamt=0;
+      (inv.itms||[]).forEach(it=>{ const d=it.itm_det||it; txval+=(d.txval||0);iamt+=(d.iamt||0); });
+      b2claTaxable+=txval; b2claIGST+=iamt; b2claCount++;
+      b2claRows.push({ state:entry.pos, origInvNo:inv.oinum||'', invNo:inv.inum, invDate:inv.idt, taxable:txval, igst:iamt });
+    });
+  });
+
+  // ── expa (Amended Exports) ──────────────────────────────────
+  (raw.expa||[]).forEach(expEntry=>{
+    (expEntry.inv||[]).forEach(inv=>{
+      let txval=0,iamt=0;
+      (inv.itms||[]).forEach(it=>{ const d=it.itm_det||it; txval+=(d.txval||0);iamt+=(d.iamt||0); });
+      expaTaxable+=txval; expaIGST+=iamt; expaCount++;
+      expaRows.push({ expType:expEntry.exp_typ, origInvNo:inv.oinum||'', invNo:inv.inum, invDate:inv.idt, taxable:txval, igst:iamt });
+    });
+  });
+
+  // ── nila (Amended NIL/Exempt) ───────────────────────────────
+  const nilaArr = Array.isArray(raw.nila) ? raw.nila.flatMap(n=>n.inv||[]) : (raw.nila?.inv||[]);
+  nilaArr.forEach(r=>{ nilaTaxable += (r.expt_amt||0)+(r.nil_amt||0)+(r.ngsup_amt||0); });
+
+  // ── cdnra (Amended CDNR — registered) ──────────────────────
+  (raw.cdnra||[]).forEach(buyer=>{
+    (buyer.nt||[]).forEach(cn=>{
+      let txval=0,iamt=0,camt=0,samt=0;
+      (cn.itms||[]).forEach(it=>{ const d=it.itm_det||it; txval+=(d.txval||0);iamt+=(d.iamt||0);camt+=(d.camt||0);samt+=(d.samt||0); });
+      const sign=(cn.ntty||'').toUpperCase()==='D'?1:-1;
+      cdnraTaxable+=txval; cdnraCGST+=camt; cdnraSGST+=samt; cdnraIGST+=iamt; cdnraCount++;
+      cdnraNetTaxable+=(sign*txval); cdnraNetCGST+=(sign*camt); cdnraNetSGST+=(sign*samt); cdnraNetIGST+=(sign*iamt);
+      cdnraRows.push({ gstin:buyer.ctin, origNoteNo:cn.ont_num||'', noteNo:cn.nt_num, noteDate:cn.nt_dt,
+        noteType:cn.ntty, taxable:txval, cgst:camt, sgst:samt, igst:iamt });
+    });
+  });
+
+  // ── cdnura (Amended CDNUR — unregistered) ──────────────────
+  (raw.cdnura||[]).forEach(cn=>{
+    let txval=0,iamt=0,camt=0,samt=0;
+    (cn.itms||[]).forEach(it=>{ const d=it.itm_det||it; txval+=(d.txval||0);iamt+=(d.iamt||0);camt+=(d.camt||0);samt+=(d.samt||0); });
+    const sign=(cn.ntty||cn.typ||'').toUpperCase()==='D'?1:-1;
+    cdnraTaxable+=txval; cdnraCGST+=camt; cdnraSGST+=samt; cdnraIGST+=iamt; cdnraCount++;
+    cdnraNetTaxable+=(sign*txval); cdnraNetCGST+=(sign*camt); cdnraNetSGST+=(sign*samt); cdnraNetIGST+=(sign*iamt);
+    cdnraRows.push({ gstin:'Unregistered', origNoteNo:cn.ont_num||'', noteNo:cn.nt_num||'',
+      noteDate:cn.nt_dt||'', noteType:cn.ntty||cn.typ||'', taxable:txval, cgst:camt, sgst:samt, igst:iamt });
+  });
+
+  // ── Net totals for this amendment block ─────────────────────
+  const totalTaxable = b2baTaxable + b2claTaxable + b2csaTaxable + expaTaxable + nilaTaxable + cdnraNetTaxable;
+  const totalCGST    = b2baCGST   + b2csaCGST                                               + cdnraNetCGST;
+  const totalSGST    = b2baSGST   + b2csaSGST                                               + cdnraNetSGST;
+  const totalIGST    = b2baIGST   + b2claIGST  + b2csaIGST   + expaIGST                   + cdnraNetIGST;
+
+  // Detect if this JSON has any GSTR-1A sections at all
+  const hasAmendments = (raw.b2ba||[]).length+(raw.b2csa||[]).length+(raw.b2cla||[]).length+
+    (raw.expa||[]).length+(raw.cdnra||[]).length+(raw.cdnura||[]).length > 0;
+
+  return {
+    coKey, coName, gstin, period, month, year, fy,
+    importedOn: new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+    hasAmendments,
+    // counts
+    b2baCount, b2csaCount, b2claCount, expaCount, cdnraCount,
+    // gross totals
+    b2baTaxable, b2baCGST, b2baSGST, b2baIGST,
+    b2csaTaxable, b2csaCGST, b2csaSGST, b2csaIGST,
+    b2claTaxable, b2claIGST,
+    expaTaxable, expaIGST,
+    nilaTaxable,
+    cdnraTaxable, cdnraCGST, cdnraSGST, cdnraIGST,
+    cdnraNetTaxable, cdnraNetCGST, cdnraNetSGST, cdnraNetIGST,
+    // NET totals (corrected values for amended records only)
+    totalTaxable, totalCGST, totalSGST, totalIGST,
+    // detail rows (stripped from localStorage to save space, present in memory)
+    b2baRows, b2csaRows, b2claRows, expaRows, cdnraRows
+  };
+}
+
+// ── Import orchestrator ────────────────────────────────────────
+function importGSTR1AJSON(){
+  if(!g1aPendingFile){ toast('Please select a GSTR-1A JSON file first','⚠️'); return; }
+  const coKey   = document.getElementById('g1a-company').value;
+  const monthSh = document.getElementById('g1a-month').value;
+  const year    = document.getElementById('g1a-year').value;
+  const fy      = document.getElementById('g1a-fy').value;
+  const coNames = {gsl:'Ginni Systems Ltd',em:'Easemy Business Pvt Ltd',bt:'Browntape Infrosolution Pvt Ltd',roxfo:'Roxfortech Infosolutions Pvt Ltd'};
+  const coName  = coNames[coKey]||coKey;
+  const gstin   = APP.gstinMap[coKey]||'';
+  const month   = monthSh + ' ' + year;   // "Apr 2025"
+  const period  = month;
+  const statusEl = document.getElementById('g1a-import-status');
+
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try {
+      const raw    = JSON.parse(ev.target.result);
+
+      // Warn if this looks like a regular GSTR-1 (no amendment keys)
+      const hasAnyAmendKey = raw.b2ba||raw.b2csa||raw.b2cla||raw.expa||raw.cdnra||raw.cdnura||raw.nila;
+      if(!hasAnyAmendKey){
+        // Check if it has regular GSTR-1 keys — user may have uploaded wrong file
+        const hasG1Keys = raw.b2b||raw.b2cs||raw.b2cl||raw.exp||raw.cdnr;
+        if(hasG1Keys){
+          toast('⚠️ This looks like a regular GSTR-1 file (no amendment keys found). Upload it under GSTR-1 Import instead.','⚠️');
+          if(statusEl) statusEl.textContent = '⚠️ Wrong file — this appears to be a regular GSTR-1, not a GSTR-1A amendment file.';
+          return;
+        }
+        toast('⚠️ No amendment sections (b2ba/b2csa/etc.) found. The file may be empty or unsupported.','⚠️');
+      }
+
+      const parsed = parseGSTR1AJSON(raw, coKey, coName, gstin, period, month, year, fy);
+
+      // Remove existing GSTR-1A for same company+month (replace on re-upload)
+      APP.gstr1aData = APP.gstr1aData.filter(d=>!(d.coKey===coKey && d.month===month));
+      APP.gstr1aData.push(parsed);
+
+      renderGSTR1AHistory();
+      renderGSTR1AView();
+      updateG1ABadge();
+      saveAppState();
+
+      g1aPendingFile = null;
+      document.getElementById('upload-ok-1a').style.display='none';
+      document.getElementById('json-inp-1a').value='';
+
+      toast(`✅ GSTR-1A imported: ${coName} · ${period} · B2BA:${parsed.b2baCount} B2CSA:${parsed.b2csaCount} CDNRA:${parsed.cdnraCount}`,'✅');
+      if(statusEl) statusEl.textContent = `✅ ${coName} · ${period} · Amended Taxable: ${Math.round(parsed.totalTaxable).toLocaleString('en-IN')} | IGST: ${Math.round(parsed.totalIGST).toLocaleString('en-IN')} | CGST: ${Math.round(parsed.totalCGST).toLocaleString('en-IN')} | SGST: ${Math.round(parsed.totalSGST).toLocaleString('en-IN')}`;
+    } catch(err){
+      toast('❌ Invalid JSON: '+err.message,'❌');
+      if(statusEl) statusEl.textContent = '❌ Parse error: '+err.message;
+    }
+  };
+  reader.readAsText(g1aPendingFile);
+}
+
+// ── Render Import History table ────────────────────────────────
+function renderGSTR1AHistory(){
+  const body  = document.getElementById('g1a-history-body');
+  const count = document.getElementById('g1a-history-count');
+  if(!body) return;
+  if(!APP.gstr1aData.length){
+    body.innerHTML='<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No GSTR-1A files imported yet.</td></tr>';
+    if(count) count.textContent='0 amendment files imported';
+    return;
+  }
+  if(count) count.textContent=APP.gstr1aData.length+' amendment file(s) imported';
+  body.innerHTML=APP.gstr1aData.map((d,i)=>{
+    // Check if corresponding GSTR-1 exists
+    const hasG1 = APP.gstr1Data.some(g=>g.coKey===d.coKey && g.month===d.month);
+    return `<tr>
+      <td class="left" style="font-size:11px">${d.importedOn}</td>
+      <td class="left">${d.coName}</td>
+      <td class="left" style="font-family:monospace;font-size:11px">${d.gstin||'—'}</td>
+      <td class="left">
+        <span style="background:#fff4ce;color:#835b00;padding:2px 7px;border-radius:2px;font-size:11px;font-weight:600">
+          Amends ${d.period}
+        </span>
+      </td>
+      <td class="left">${d.fy}</td>
+      <td>${d.b2baCount}</td>
+      <td>${d.b2csaCount}</td>
+      <td>${d.cdnraCount}</td>
+      <td>${fINR(d.totalTaxable)}</td>
+      <td>${fINR(d.totalCGST)}</td>
+      <td>${fINR(d.totalSGST)}</td>
+      <td>${fINR(d.totalIGST)}</td>
+      <td>
+        ${hasG1
+          ? '<span class="tag tag-ok">✓ GSTR-1 Found</span>'
+          : '<span class="tag tag-warn">⚠ No GSTR-1 uploaded</span>'}
+      </td>
+      <td><button class="btn btn-danger" style="padding:2px 8px;font-size:11px" onclick="deleteGSTR1A(${i})">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Render View page (KPIs + summary table) ────────────────────
+function renderGSTR1AView(){
+  const filesEl   = document.getElementById('g1av-files');
+  const b2baEl    = document.getElementById('g1av-b2ba');
+  const taxEl     = document.getElementById('g1av-taxable');
+  const gstEl     = document.getElementById('g1av-gst');
+  const pbcEl     = document.getElementById('g1av-pbc');
+  const bodyEl    = document.getElementById('g1av-summary-body');
+  if(!filesEl) return;
+
+  const coF  = (document.getElementById('g1av-co-filter')||{value:'all'}).value;
+  const fyF  = (document.getElementById('g1av-fy-filter')||{value:'all'}).value;
+  const data = APP.gstr1aData.filter(d=>(coF==='all'||d.coKey===coF)&&(fyF==='all'||d.fy===fyF));
+
+  filesEl.textContent = data.length||'0';
+  if(!data.length){
+    b2baEl.textContent='—'; taxEl.textContent='—'; gstEl.textContent='—';
+    if(pbcEl) pbcEl.textContent='/ No amendment data imported yet';
+    if(bodyEl) bodyEl.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">No GSTR-1A data for selected filter.</td></tr>';
+    return;
+  }
+
+  const totB2BA = data.reduce((s,d)=>s+d.b2baCount,0);
+  const totTax  = data.reduce((s,d)=>s+d.totalTaxable,0);
+  const totGST  = data.reduce((s,d)=>s+d.totalCGST+d.totalSGST+d.totalIGST,0);
+  b2baEl.textContent = totB2BA;
+  taxEl.textContent  = fINR(totTax);
+  gstEl.textContent  = fINR(totGST);
+  if(pbcEl) pbcEl.textContent = '/ '+data.length+' amendment file(s) imported';
+
+  if(bodyEl){
+    const MONTH_ORDER=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+    const sorted=[...data].sort((a,b)=>{
+      if(a.year!==b.year) return +a.year-(+b.year);
+      return MONTH_ORDER.indexOf(a.month.split(' ')[0])-MONTH_ORDER.indexOf(b.month.split(' ')[0]);
+    });
+    bodyEl.innerHTML = sorted.map(d=>{
+      const hasG1 = APP.gstr1Data.some(g=>g.coKey===d.coKey&&g.month===d.month);
+      const g1 = hasG1 ? APP.gstr1Data.find(g=>g.coKey===d.coKey&&g.month===d.month) : null;
+      return `<tr>
+        <td class="left">${d.coName}</td>
+        <td class="left" style="font-family:monospace;font-size:11px">${d.gstin||'—'}</td>
+        <td class="left">
+          <span style="background:#fff4ce;color:#835b00;padding:2px 7px;border-radius:2px;font-size:11px;font-weight:700">
+            Amends ${d.period}
+          </span>
+        </td>
+        <td class="left">${d.fy}</td>
+        <td>${d.b2baCount}</td>
+        <td>${d.b2csaCount}</td>
+        <td>${d.cdnraCount}</td>
+        <td>${fINR(d.totalTaxable)}</td>
+        <td>${fINR(d.totalCGST)}</td>
+        <td>${fINR(d.totalSGST)}</td>
+        <td>${fINR(d.totalIGST)}</td>
+        <td><strong>${fINR(d.totalCGST+d.totalSGST+d.totalIGST)}</strong></td>
+        <td class="left">
+          ${hasG1
+            ? `<span class="tag tag-ok">✓ Found</span>
+               <div style="font-size:10px;color:var(--muted);margin-top:2px">
+                 Net after 1A: <strong>${fINR((g1.totalTaxable||0)+d.totalTaxable)}</strong>
+               </div>`
+            : '<span class="tag tag-warn">⚠ Upload GSTR-1 first</span>'}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ── CRUD helpers ───────────────────────────────────────────────
+function deleteGSTR1A(i){
+  APP.gstr1aData.splice(i,1);
+  renderGSTR1AHistory(); renderGSTR1AView(); updateG1ABadge(); saveAppState();
+  toast('GSTR-1A entry removed','🗑');
+}
+function clearGSTR1AData(){
+  if(!confirm('Clear all imported GSTR-1A amendment data?')) return;
+  APP.gstr1aData=[];
+  renderGSTR1AHistory(); renderGSTR1AView(); updateG1ABadge(); saveAppState();
+  toast('All GSTR-1A data cleared','🗑');
+}
+
+// ── Badge counter (yellow count on databar tab) + status bar ──
+function updateG1ABadge(){
+  const b = document.getElementById('dtab-g1a-badge');
+  if(b){
+    if(APP.gstr1aData.length){ b.style.display='inline-flex'; b.textContent=APP.gstr1aData.length; }
+    else { b.style.display='none'; }
+  }
+  // Update status bar
+  const sb = document.getElementById('sbar-g1a');
+  if(sb){
+    sb.innerHTML = APP.gstr1aData.length
+      ? `<div class="sdot" style="background:var(--gold)"></div>GSTR-1A: ${APP.gstr1aData.length} amendment(s)`
+      : `<div class="sdot" style="background:var(--muted)"></div>GSTR-1A: No Data`;
+  }
+}
+
+// ── CSV export ─────────────────────────────────────────────────
+function exportGSTR1ACSV(){
+  if(!APP.gstr1aData.length){ toast('No GSTR-1A data to export','⚠️'); return; }
+  const rows=[['Company','GSTIN','Amends Period','FY','B2BA#','B2CSA#','CDNRA#','Taxable','CGST','SGST','IGST','Total GST']];
+  APP.gstr1aData.forEach(d=>rows.push([
+    d.coName,d.gstin,d.period,d.fy,
+    d.b2baCount,d.b2csaCount,d.cdnraCount,
+    d.totalTaxable.toFixed(2),d.totalCGST.toFixed(2),d.totalSGST.toFixed(2),d.totalIGST.toFixed(2),
+    (d.totalCGST+d.totalSGST+d.totalIGST).toFixed(2)
+  ]));
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='gstr1a_amendments_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  toast('✅ GSTR-1A CSV exported','✅');
+}
+
+// ── Helper: get effective (GSTR-1 + any GSTR-1A amendment) totals ──
+// Used by reconciliation to produce merged figures per company+month
+function getEffectiveG1Totals(coKey, month){
+  const g1  = APP.gstr1Data.find(d=>d.coKey===coKey&&d.month===month);
+  const g1a = APP.gstr1aData.find(d=>d.coKey===coKey&&d.month===month);
+  if(!g1 && !g1a) return null;
+
+  // Base: GSTR-1 (or zeros if only 1A uploaded)
+  const base = g1 || { totalTaxable:0, totalCGST:0, totalSGST:0, totalIGST:0 };
+
+  // Amendment adjustment: GSTR-1A corrects specific invoices.
+  // We add 1A totals as the net amendment impact.
+  const amendTaxable = g1a ? g1a.totalTaxable : 0;
+  const amendCGST    = g1a ? g1a.totalCGST    : 0;
+  const amendSGST    = g1a ? g1a.totalSGST    : 0;
+  const amendIGST    = g1a ? g1a.totalIGST    : 0;
+
+  return {
+    coKey, month,
+    // original GSTR-1 figures
+    g1Taxable : base.totalTaxable, g1CGST:base.totalCGST, g1SGST:base.totalSGST, g1IGST:base.totalIGST,
+    // GSTR-1A amendment figures
+    g1aTaxable: amendTaxable, g1aCGST:amendCGST, g1aSGST:amendSGST, g1aIGST:amendIGST,
+    // net effective (used for recon diff calculation)
+    totalTaxable: base.totalTaxable + amendTaxable,
+    totalCGST   : base.totalCGST   + amendCGST,
+    totalSGST   : base.totalSGST   + amendSGST,
+    totalIGST   : base.totalIGST   + amendIGST,
+    hasAmendment: !!g1a
+  };
+}
+
+// ══ END GSTR-1A MODULE ════════════════════════════════════════
 
 // ── FOREX OVERRIDE FUNCTIONS ───────────────────────────────────
 var _forexCurrentInvoice = null;
@@ -2862,6 +3470,14 @@ function saveAppState(){
   _lsSet('gst_isd', APP.isdData || []);
   // ITC Books (Odoo ITC receivable accounts)
   _lsSet('gst_itc', APP.itcData || []);
+  // GSTR-1A — Amendment return (strip heavy row arrays before persisting)
+  var g1aSlim = (APP.gstr1aData||[]).map(function(d){
+    var s = Object.assign({}, d);
+    delete s.b2baRows; delete s.b2csaRows; delete s.b2claRows;
+    delete s.expaRows; delete s.cdnraRows;
+    return s;
+  });
+  _lsSet('gst_g1a', g1aSlim);
   updateStorageBadge();
 }
 
@@ -2971,12 +3587,21 @@ function loadAppState(){
     if (rawISD) { APP.isdData = JSON.parse(rawISD) || []; }
   } catch(e) { console.warn('isd load:', e); }
 
+  // GSTR-1A — Amendment return
+  try {
+    var rawG1A = localStorage.getItem('gst_g1a');
+    if (rawG1A) { APP.gstr1aData = JSON.parse(rawG1A) || []; }
+  } catch(e) { console.warn('g1a load:', e); }
+
   // Rebuild UI
   buildSales(APP.salesData);
   buildCredit(APP.creditData);
   renderGSTR1History();
   renderGSTR1View();
   updateGSTR1StatusBar();
+  renderGSTR1AHistory();
+  renderGSTR1AView();
+  updateG1ABadge();
   loadGSTINMap();
   updateDashCoRecon();
   var hasData = APP.salesData.length || APP.creditData.length ||
@@ -3002,7 +3627,7 @@ var SERVER_STORAGE_ENABLED = false;  // auto-detected on init
 
 var ALL_LS_KEYS = [
   'gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm',
-  'gst_g2b','gst_itc','gst_isd',
+  'gst_g2b','gst_itc','gst_isd','gst_g1a',
   'gst_audit_portal_v1','gst_audit_portal_v1_ext','gst_audit_portal_v1_g2b',
   'gst_audit_3b_v1','gst_audit_rcm_v1',
   'gst_audit_core_v2','gst_audit_sync_v2'
@@ -3218,7 +3843,7 @@ function exportAppBackup() {
   try { if (typeof saveGstr3bState === 'function') saveGstr3bState(); } catch(e) {}
   var ALL_KEYS = [
     'gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm',
-    'gst_g2b','gst_itc','gst_isd',
+    'gst_g2b','gst_itc','gst_isd','gst_g1a',
     'gst_audit_portal_v1','gst_audit_portal_v1_ext','gst_audit_portal_v1_g2b',
     'gst_audit_3b_v1','gst_audit_rcm_v1',
     'gst_audit_core_v2','gst_audit_sync_v2'
@@ -3262,7 +3887,7 @@ function importAppBackup(input) {
       if (base) {
         toast('✅ Restored ' + count + ' keys — pushing to server & reloading…','✅');
         // Push each key to Firebase before reloading
-        var pushKeys = ['gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm','gst_g2b','gst_itc','gst_isd'];
+        var pushKeys = ['gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm','gst_g2b','gst_itc','gst_isd','gst_g1a'];
         var promises = pushKeys.map(function(k) {
           var v = localStorage.getItem(k);
           if (!v) return Promise.resolve();
@@ -3292,12 +3917,13 @@ function importAppBackup(input) {
 function clearAppState(){
   if (!confirm('⚠️ This will clear ALL saved data (Sales, Credit Notes, GSTR-1, GSTR-3B, RCM).\n\nAre you sure?')) return;
   ['gst_audit_portal_v1','gst_audit_portal_v1_ext','gst_audit_portal_v1_g2b','gst_audit_3b_v1','gst_audit_rcm_v1',
-   'gst_audit_core_v2','gst_audit_sync_v2','gst_cfg','gst_g1','gst_3b','gst_rcm','gst_sales','gst_credit','gst_g2b','gst_itc','gst_isd']
+   'gst_audit_core_v2','gst_audit_sync_v2','gst_cfg','gst_g1','gst_3b','gst_rcm','gst_sales','gst_credit','gst_g2b','gst_itc','gst_isd','gst_g1a']
     .forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
   APP.salesData=[];  APP.creditData=[];
-  APP.gstr1Data=[];  APP.gstr3bData=[];  APP.rcmData=[];  APP.gstr2bData=[];  APP.itcData=[];  APP.isdData=[];
+  APP.gstr1Data=[];  APP.gstr3bData=[];  APP.rcmData=[];  APP.gstr2bData=[];  APP.itcData=[];  APP.isdData=[];  APP.gstr1aData=[];
   buildSales([]);    buildCredit([]);
   renderGSTR1History(); renderGSTR1View(); updateGSTR1StatusBar();
+  renderGSTR1AHistory(); renderGSTR1AView(); updateG1ABadge();
   try{if(typeof window.renderGSTR3BHistory==='function')window.renderGSTR3BHistory();}catch(e){}
   try{if(typeof window.renderGSTR3BView==='function')window.renderGSTR3BView();}catch(e){}
   try{if(typeof window.renderRCMTable==='function')window.renderRCMTable();}catch(e){}
@@ -8578,6 +9204,17 @@ setTimeout(function() {
   var badge = document.getElementById('dtab-gstr2b-badge');
   var totalFiles = (APP.gstr2bData.length||0) + (APP.isdData.length||0);
   if (badge && totalFiles) { badge.style.display = ''; badge.textContent = totalFiles; }
+
+  // ── GSTR-1A init ──────────────────────────────────────────────
+  try {
+    var _rawG1A = localStorage.getItem('gst_g1a');
+    if (_rawG1A) { APP.gstr1aData = JSON.parse(_rawG1A) || []; }
+  } catch(e) {}
+  if (APP.gstr1aData.length) {
+    renderGSTR1AHistory();
+    renderGSTR1AView();
+    updateG1ABadge();
+  }
 }, 100);
 
 })();
