@@ -7318,14 +7318,19 @@ loadGstr3bState();
               + '<option>Oct 2025</option><option>Nov 2025</option><option>Dec 2025</option>'
               + '<option>Jan 2026</option><option>Feb 2026</option><option>Mar 2026</option>'
             + '</select>'
+            + '<select class="fsel" id="itcv-filter-type" onchange="renderITCTable()" style="font-size:12px">'
+              + '<option value="">All Types</option>'
+              + '<option value="Normal">Normal ITC</option>'
+              + '<option value="ISD">ISD Only</option>'
+            + '</select>'
             + '<select class="fsel" id="itcv-filter-g2b" onchange="renderITCTable()" style="font-size:12px">'
-              + '<option value="">All GSTR-2B Statuses</option>'
+              + '<option value="">All Statuses</option>'
             + '</select>'
             + '<div class="sbx" style="max-width:220px"><span>&#128269;</span>'
               + '<input type="text" id="itcv-search" placeholder="Entry No, Vendor, Ref..." oninput="renderITCTable()" style="border:none;outline:none;font-size:12px;color:var(--text);width:100%;background:transparent;font-family:inherit"/>'
             + '</div>'
             + '<div class="fr">'
-              + '<button class="btn btn-default" onclick="document.getElementById(\'itcv-filter-co\').value=\'\';document.getElementById(\'itcv-filter-month\').value=\'\';document.getElementById(\'itcv-filter-g2b\').value=\'\';document.getElementById(\'itcv-search\').value=\'\';renderITCTable()">&#10005; Clear</button>'
+              + '<button class="btn btn-default" onclick="document.getElementById(\'itcv-filter-co\').value=\'\';document.getElementById(\'itcv-filter-month\').value=\'\';document.getElementById(\'itcv-filter-type\').value=\'\';document.getElementById(\'itcv-filter-g2b\').value=\'\';document.getElementById(\'itcv-search\').value=\'\';renderITCTable()">&#10005; Clear</button>'
             + '</div>'
           + '</div>' +
           '<div class="tcard" id="itcv-tcard">' +
@@ -7342,17 +7347,32 @@ loadGstr3bState();
   }
 
   window.renderITCTable = function() {
-    var coF  = (document.getElementById('itcv-filter-co')    || {value:''}).value;
-    var moF  = (document.getElementById('itcv-filter-month') || {value:''}).value;
-    var g2bF = (document.getElementById('itcv-filter-g2b')   || {value:''}).value;
-    var q    = ((document.getElementById('itcv-search')      || {value:''}).value || '').toLowerCase();
+    var coF   = (document.getElementById('itcv-filter-co')    || {value:''}).value;
+    var moF   = (document.getElementById('itcv-filter-month') || {value:''}).value;
+    var typeF = (document.getElementById('itcv-filter-type')  || {value:''}).value;
+    var g2bF  = (document.getElementById('itcv-filter-g2b')   || {value:''}).value;
+    var q     = ((document.getElementById('itcv-search')      || {value:''}).value || '').toLowerCase();
+
+    /* ── Build ISD ref index from uploaded GSTR-6 ──────────────── */
+    var isdRefIdx = {};   // inumNorm → {inum, dt, supplierGSTIN, coKey, month}
+    var hasISDData = !!(APP.isdData && APP.isdData.length);
+    if (hasISDData) {
+      (APP.isdData || []).forEach(function(d) {
+        (d.invoiceList || []).forEach(function(inv) {
+          var k = (inv.inumNorm || (inv.inum||'').toUpperCase().replace(/\s+/g,''));
+          if (k) isdRefIdx[k] = { inum: inv.inum, dt: inv.dt, supplierGSTIN: inv.supplierGSTIN,
+                                  coKey: d.coKey, month: d.month, isCredit: inv.isCredit||false };
+        });
+      });
+    }
 
     var data = (APP.itcData || []).filter(function(r) {
       // Re-apply SERIES_MAP for any records not yet corrected (e.g. old localStorage)
       var prefix = ((r.moveNo||'')).split('/')[0].toLowerCase().trim();
       var effectiveCoKey = (prefix && SERIES_MAP[prefix]) ? SERIES_MAP[prefix] : (r.coKey || '');
-      if (coF && effectiveCoKey !== coF) return false;
-      if (moF && r.month !== moF) return false;
+      if (coF   && effectiveCoKey !== coF)            return false;
+      if (moF   && r.month       !== moF)             return false;
+      if (typeF && (r.itcType||'Normal')  !== typeF)  return false;
       return true;
     });
 
@@ -7367,6 +7387,12 @@ loadGstr3bState();
     function _g2bStatus(refNo) {
       if (!g2bHasData) return 'Not Applicable';
       return _matchG2B(refNo);
+    }
+    function _isdMatchStatus(r) {
+      if (r.itcType !== 'ISD') return null;   // non-ISD entries — no ISD check
+      if (!hasISDData) return 'no-data';
+      var key = (r.refNo||'').toString().trim().toUpperCase().replace(/\s+/g,'');
+      return key && isdRefIdx[key] ? 'matched' : 'missing';
     }
 
     /* ── Search + GSTR-2B status filter ────────────────────────── */
@@ -7444,18 +7470,39 @@ loadGstr3bState();
         var dp = r.billDate.split('-');
         dispDate = dp[2]+'-'+(MON[parseInt(dp[1],10)]||dp[1])+'-'+dp[0];
       }
-      var isCN  = r.isRefund || (r.igst < 0 || r.cgst < 0 || r.sgst < 0 || r.taxable < 0);
-      var rowStyle = isCN ? ' style="background:#fff8f7;"' : (r.isMisc ? ' style="background:#fffbe6;"' : '');
-      var cnBadge  = isCN ? '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">CN</span>' : '';
-      var miscBadge= r.isMisc ? '<span title="MISC Journal Entry" style="background:#fff4ce;color:#835b00;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">MISC</span>' : '';
-      var numStyle = isCN ? 'color:#d83b01;font-weight:600' : '';
-      var dispPrefix = ((r.moveNo||'')).split('/')[0].toLowerCase().trim();
-      var dispCoKey  = (dispPrefix && SERIES_MAP[dispPrefix]) ? SERIES_MAP[dispPrefix] : (r.coKey||'');
-      var dispCompany= CO_NAMES_MAP[dispCoKey] || r.company || '—';
+      var isISD  = r.itcType === 'ISD';
+      var isCN   = r.isRefund || (r.igst < 0 || r.cgst < 0 || r.sgst < 0 || r.taxable < 0);
+      var rowBg  = isISD ? '#faf5ff' : (isCN ? '#fff8f7' : (r.isMisc ? '#fffbe6' : ''));
+      var rowStyle = rowBg ? ' style="background:'+rowBg+';"' : '';
+      var cnBadge   = isCN ? '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">CN</span>' : '';
+      var isdBadge  = isISD ? '<span style="background:#f0e6ff;color:#5c0099;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">ISD</span>' : '';
+      var miscBadge = r.isMisc ? '<span title="MISC Journal Entry" style="background:#fff4ce;color:#835b00;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px">MISC</span>' : '';
+      var numStyle  = isCN ? 'color:#d83b01;font-weight:600' : (isISD ? 'color:#5c0099;font-weight:600' : '');
+      var dispPrefix  = ((r.moveNo||'')).split('/')[0].toLowerCase().trim();
+      var dispCoKey   = (dispPrefix && SERIES_MAP[dispPrefix]) ? SERIES_MAP[dispPrefix] : (r.coKey||'');
+      var dispCompany = CO_NAMES_MAP[dispCoKey] || r.company || '—';
       var seriesOverridden = dispCoKey !== (r.coKey||'') && !!SERIES_MAP[dispPrefix];
+
+      /* ── ISD match status cell ─────────────────────────── */
+      var isdSt = _isdMatchStatus(r);
+      var isdMatchCell;
+      if (isdSt === null) {
+        isdMatchCell = '<td style="padding:5px 8px"></td>';
+      } else if (isdSt === 'no-data') {
+        isdMatchCell = '<td class="left" style="padding:5px 8px"><span style="background:#f3f2f1;color:#8a8886;font-size:11px;font-weight:600;padding:2px 6px;border-radius:2px;white-space:nowrap">\u2014 No GSTR-6</span></td>';
+      } else if (isdSt === 'matched') {
+        var mx = isdRefIdx[(r.refNo||'').toUpperCase().replace(/\s+/g,'')];
+        isdMatchCell = '<td class="left" style="padding:5px 8px">'
+          + '<span style="background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 6px;border-radius:2px;white-space:nowrap">\u2705 In GSTR-6</span>'
+          + (mx ? '<div style="font-size:10px;color:#605e5c;margin-top:2px;font-family:monospace">'+mx.month+'</div>' : '')
+          + '</td>';
+      } else {
+        isdMatchCell = '<td class="left" style="padding:5px 8px"><span style="background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 6px;border-radius:2px;white-space:nowrap">\u274c Not in GSTR-6</span></td>';
+      }
+
       rows += '<tr'+rowStyle+'>'
         + '<td class="left" style="color:var(--muted);font-size:11px;padding:7px 6px 7px 10px">'+(i+1)+'</td>'
-        + '<td class="left"><strong>'+(r.moveNo||'—')+'</strong>'+cnBadge+miscBadge+'</td>'
+        + '<td class="left"><strong>'+(r.moveNo||'—')+'</strong>'+isdBadge+cnBadge+miscBadge+'</td>'
         + '<td class="left" style="white-space:nowrap;font-variant-numeric:tabular-nums">'+dispDate+'</td>'
         + '<td class="left" style="font-family:monospace;font-size:11.5px;color:var(--accent)">'+(r.refNo||'—')+'</td>'
         + '<td class="left" style="font-weight:600;max-width:180px">'+(r.vendorName||'—')+'</td>'
@@ -7468,17 +7515,19 @@ loadGstr3bState();
         + '<td style="'+numStyle+'">'+pINR(r.cgst||0)+'</td>'
         + '<td style="'+numStyle+'">'+pINR(r.sgst||0)+'</td>'
         + '<td class="left">'+g2bTag(r.refNo)+'</td>'
+        + isdMatchCell
         + '</tr>';
     });
     rows += '<tr class="total-row">'
       + (function(){var cns=filtered.filter(function(r){return r.isRefund||(r.igst<0||r.cgst<0||r.sgst<0||r.taxable<0);}).length;
+         var isds=filtered.filter(function(r){return r.itcType==='ISD';}).length;
          var bills=filtered.length-cns;
-         return '<td class="left" colspan="7">TOTAL &nbsp;<span style="font-weight:400;color:var(--muted)">'+bills+' bills'+(cns?' &minus; '+cns+' credit notes':'')+'</span></td>';}())
+         return '<td class="left" colspan="7">TOTAL &nbsp;<span style="font-weight:400;color:var(--muted)">'+bills+' bills'+(cns?' &minus; '+cns+' credit notes':'')+(isds?' &nbsp;|&nbsp; <span style="color:#5c0099">'+isds+' ISD</span>':'')+'</span></td>';}())
       + '<td>'+pINR(rTot.taxable)+'</td>'
       + '<td>'+pINR(rTot.igst)+'</td>'
       + '<td>'+pINR(rTot.cgst)+'</td>'
       + '<td>'+pINR(rTot.sgst)+'</td>'
-      + '<td></td>'
+      + '<td></td><td></td>'
       + '</tr>';
 
     /* ── Match summary badges ──────────────────────────────────── */
@@ -7495,15 +7544,35 @@ loadGstr3bState();
         + (na    ? '<span style="background:#f3f2f1;color:#8a8886;font-size:11px;font-weight:600;padding:2px 7px;border-radius:2px;margin-left:6px">'+na+' N/A</span>' : '')
       : '<span style="background:#fff4ce;color:#835b00;font-size:11px;font-weight:600;padding:2px 9px;border-radius:2px;margin-left:10px">&#128229; Import GSTR-2B JSON to see match status</span>';
 
+    /* ── ISD match summary badges ──────────────────────────────── */
+    var isdEntries = data.filter(function(r){ return r.itcType === 'ISD'; });
+    var isdMatchedCount = 0, isdMissingCount = 0;
+    isdEntries.forEach(function(r) {
+      var st = _isdMatchStatus(r);
+      if (st === 'matched') isdMatchedCount++;
+      else if (st === 'missing') isdMissingCount++;
+    });
+    var isdBadges = '';
+    if (isdEntries.length) {
+      isdBadges = '<span style="background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;margin-left:10px">&#128221; '+isdEntries.length+' ISD entries</span>';
+      if (hasISDData) {
+        if (isdMatchedCount)  isdBadges += '<span style="background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;margin-left:6px">\u2705 '+isdMatchedCount+' in GSTR-6</span>';
+        if (isdMissingCount)  isdBadges += '<span style="background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;margin-left:6px">\u274c '+isdMissingCount+' not in GSTR-6</span>';
+      } else {
+        isdBadges += '<span style="background:#fff4ce;color:#835b00;font-size:11px;font-weight:600;padding:2px 8px;border-radius:2px;margin-left:6px">&#9888;&#65039; Upload GSTR-6 to verify ISD</span>';
+      }
+    }
+
     card.innerHTML =
       '<div class="thdr" style="justify-content:space-between;flex-wrap:wrap;gap:6px">'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
       + '<span class="thdr-title">ITC Register \u2014 Bill Wise</span>'
       + '<span class="thdr-sub">'+filtered.length+' bill(s) \u00b7 Odoo ITC Receivable Accounts</span>'
       + matchBadges
+      + isdBadges
       + '</div>'
       + '</div>'
-      + '<div class="twrap"><table style="min-width:1080px">'
+      + '<div class="twrap"><table style="min-width:1180px">'
       + '<thead><tr class="simple-hdr">'
       + '<th class="left" style="width:36px">#</th>'
       + '<th class="left" style="min-width:140px">Journal Entry No</th>'
@@ -7516,7 +7585,8 @@ loadGstr3bState();
       + '<th style="min-width:80px">IGST</th>'
       + '<th style="min-width:80px">CGST</th>'
       + '<th style="min-width:80px">SGST</th>'
-      + '<th class="left" style="min-width:140px">GSTR-2B Match Status</th>'
+      + '<th class="left" style="min-width:140px">GSTR-2B Match</th>'
+      + '<th class="left" style="min-width:130px;background:#f8f4ff;color:#5c0099">GSTR-6 ISD Match</th>'
       + '</tr></thead>'
       + '<tbody>'+rows+'</tbody>'
       + '</table></div>';
@@ -7531,8 +7601,17 @@ loadGstr3bState();
       var key = refNo.toString().trim().toUpperCase().replace(/\s+/g,'');
       return (APP.gstr2bRefSet && APP.gstr2bRefSet[key]) ? 'Matched' : 'Not in GSTR-2B';
     }
+    /* Build ISD ref index for CSV export */
+    var isdRefIdx2 = {};
+    (APP.isdData||[]).forEach(function(d){
+      (d.invoiceList||[]).forEach(function(inv){
+        var k=(inv.inumNorm||(inv.inum||'').toUpperCase().replace(/\s+/g,''));
+        if(k) isdRefIdx2[k]={month:d.month};
+      });
+    });
+    var hasISD2 = Object.keys(isdRefIdx2).length > 0;
     var MON = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var csvRows = [['Journal Entry No','Bill Date','Reference No','Vendor Name','Branch','Company','Taxable Value','IGST','CGST','SGST','GSTR-2B Match Status']];
+    var csvRows = [['Journal Entry No','Bill Date','Reference No','Vendor Name','Branch','Company','ITC Type','Taxable Value','IGST','CGST','SGST','GSTR-2B Match Status','GSTR-6 ISD Match']];
     data.forEach(function(r) {
       var dispDate = r.billDate || '';
       if (r.billDate && r.billDate.length === 10) {
@@ -7540,6 +7619,14 @@ loadGstr3bState();
         dispDate = dp[2]+'-'+(MON[parseInt(dp[1],10)]||dp[1])+'-'+dp[0];
       }
       var g2bStatus = g2bHasData ? _matchG2B(r.refNo) : 'Not Applicable';
+      var isdStatus = '';
+      if (r.itcType === 'ISD') {
+        if (!hasISD2) isdStatus = 'No GSTR-6 uploaded';
+        else {
+          var k2 = (r.refNo||'').toUpperCase().replace(/\s+/g,'');
+          isdStatus = (k2 && isdRefIdx2[k2]) ? 'In GSTR-6 (' + isdRefIdx2[k2].month + ')' : 'Not in GSTR-6';
+        }
+      }
       csvRows.push([
         r.moveNo||'',
         dispDate,
@@ -7547,11 +7634,13 @@ loadGstr3bState();
         '"'+(r.vendorName||'').replace(/"/g,'""')+'"',
         r.branch||'',
         '"'+(r.company||'').replace(/"/g,'""')+'"',
+        r.itcType||'Normal',
         (r.taxable||0).toFixed(2),
         (r.igst||0).toFixed(2),
         (r.cgst||0).toFixed(2),
         (r.sgst||0).toFixed(2),
-        g2bStatus
+        g2bStatus,
+        isdStatus
       ]);
     });
     var csv = csvRows.map(function(row){ return row.join(','); }).join('\n');
