@@ -6837,24 +6837,35 @@ loadGstr3bState();
     el=document.getElementById('rcm-kpi-sgst');   if(el) el.textContent=fINR(totSGST);
 
     var rows = sorted.map(function(r,i) {
-      return '<tr>'
-        +'<td class="left">'+(i+1)+'</td>'
-        +'<td class="left"><strong>'+r.entryNo+'</strong>'+(r.ref?'<div style="font-size:10px;color:var(--muted)">Ref: '+r.ref+'</div>':'')+'</td>'
+      var isCN     = r.isRefund || (r.igst < 0 || r.cgst < 0 || r.sgst < 0 || r.taxable < 0);
+      var rowBg    = isCN ? 'background:#fff8f8;' : '';
+      var numStyle = isCN ? 'color:#d83b01;font-weight:600;' : '';
+      var cnBadge  = isCN
+        ? '<span style="background:#fde7e9;color:#d83b01;font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px;margin-left:5px;vertical-align:middle">CN</span>'
+        : '';
+      return '<tr style="'+rowBg+'">'
+        +'<td class="left" style="color:var(--muted);font-size:11px">'+(i+1)+'</td>'
+        +'<td class="left"><strong>'+r.entryNo+'</strong>'+cnBadge+(r.ref?'<div style="font-size:10px;color:var(--muted)">Ref: '+r.ref+'</div>':'')+'</td>'
         +'<td class="left">'+r.date+'</td>'
         +'<td class="left"><span class="tag tag-month">'+(r.month||'—')+'</span></td>'
         +'<td class="left" style="font-weight:600">'+r.vendor+'</td>'
         +'<td class="left"><span class="tag tag-branch">'+(r.branch||'—')+'</span></td>'
         +'<td class="left" style="font-size:11px;color:var(--muted)">'+r.company+'</td>'
-        +'<td>'+fINR(r.taxable)+'</td>'
-        +'<td>'+fINR(r.igst)+'</td>'
-        +'<td>'+fINR(r.cgst)+'</td>'
-        +'<td>'+fINR(r.sgst)+'</td>'
-        +'<td><strong>'+fINR(r.igst+r.cgst+r.sgst)+'</strong></td>'
+        +'<td style="'+numStyle+'">'+fINR(r.taxable)+'</td>'
+        +'<td style="'+numStyle+'">'+fINR(r.igst)+'</td>'
+        +'<td style="'+numStyle+'">'+fINR(r.cgst)+'</td>'
+        +'<td style="'+numStyle+'">'+fINR(r.sgst)+'</td>'
+        +'<td style="'+numStyle+'"><strong>'+fINR(r.igst+r.cgst+r.sgst)+'</strong></td>'
       +'</tr>';
     }).join('');
 
+    var cnCount = sorted.filter(function(r){ return r.isRefund || (r.igst<0||r.cgst<0||r.sgst<0||r.taxable<0); }).length;
+    var billCount = sorted.length - cnCount;
+    var totalLabel = billCount + ' bill' + (billCount!==1?'s':'')
+      + (cnCount ? ' &nbsp;&minus;&nbsp; <span style="color:#d83b01">'+cnCount+' credit note'+(cnCount!==1?'s':'')+'</span>' : '');
+
     rows += '<tr class="total-row">'
-      +'<td class="left" colspan="7">TOTAL ('+sorted.length+' transactions)</td>'
+      +'<td class="left" colspan="7">TOTAL ('+totalLabel+')</td>'
       +'<td>'+fINR(totTax)+'</td>'
       +'<td>'+fINR(totIGST)+'</td>'
       +'<td>'+fINR(totCGST)+'</td>'
@@ -6864,7 +6875,7 @@ loadGstr3bState();
 
     card.innerHTML = '<div class="thdr">'
       +'<span class="thdr-title">RCM Register \u2014 Transaction Wise</span>'
-      +'<span class="thdr-sub">'+sorted.length+' entries \u00b7 Odoo Debit balance</span>'
+      +'<span class="thdr-sub">'+sorted.length+' entries'+(cnCount?' \u00b7 <span style="color:#d83b01">'+cnCount+' credit note'+(cnCount!==1?'s':'')+'</span>':'')+'</span>'
     +'</div>'
     +'<div class="twrap"><table>'
       +'<thead><tr class="simple-hdr">'
@@ -8730,7 +8741,6 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'      _esc(g.inum),_esc(g.dt),_esc(g.supplierName),_esc(g.supplierGSTIN),'
     +'      _n2(g.txval),_n2(g.igst),_n2(g.cgst),_n2(g.sgst)]);'
     +'  });'
-    // Summary totals row
     +'  var tBT=0,tBI=0,tBC=0,tBS=0,tGT=0,tGI=0,tGC=0,tGS=0,cM=0,cB=0,cG=0;'
     +'  rows.forEach(function(x){'
     +'    tBT+=(x.r?x.r.taxable||0:0);tBI+=(x.r?x.r.igst||0:0);tBC+=(x.r?x.r.cgst||0:0);tBS+=(x.r?x.r.sgst||0:0);'
@@ -8743,12 +8753,20 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'  var fn="ITC_Recon_"+mo.replace(/ /g,"_")+"_"+coKey+(br?"_"+br.replace(/ /g,"_"):"")+".csv";'
     +'  _dlCSV(csv,fn);'
     +'}'
-    // ── Full FY Excel (all companies + branches + months) ─────────
+    // ── Full FY Excel — respects cof / brf filter dropdowns ───────
     +'function downloadFYXL(){'
     +'  var MO=["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];'
+    +'  var selCo=(document.getElementById("cof")||{}).value||"";'
+    +'  var selBr=(document.getElementById("brf")||{}).value||"";'
     +'  var combos={};'
-    +'  _itc.forEach(function(r){var k=r.coKey+"|||"+(r.branch||"");combos[k]={coKey:r.coKey,branch:r.branch||""};});'
+    +'  _itc.forEach(function(r){'
+    +'    if(selCo&&r.coKey!==selCo)return;'
+    +'    if(selBr&&(r.branch||"")!==selBr)return;'
+    +'    var k=r.coKey+"|||"+(r.branch||"");'
+    +'    combos[k]={coKey:r.coKey,branch:r.branch||""};'
+    +'  });'
     +'  var coList=Object.values(combos);'
+    +'  if(!coList.length){alert("No data for selected filter.");return;}'
     +'  var HDR=["Company","Branch","Month","#","Status","JE No","Bill Date","Ref No","Vendor Name",'
     +'           "Books Taxable","Books IGST","Books CGST","Books SGST",'
     +'           "GSTR-2B Inv No","Inv Date","Supplier Name","Supplier GSTIN",'
@@ -8757,10 +8775,9 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'  var grandBT=0,grandBI=0,grandBC=0,grandBS=0,grandGT=0,grandGI=0,grandGC=0,grandGS=0;'
     +'  coList.forEach(function(combo){'
     +'    var coKey=combo.coKey,br=combo.branch;'
-    +'    var months=[];'
     +'    var mSet={};'
     +'    _itc.forEach(function(r){if(r.coKey===coKey&&(r.branch||"")===br&&r.month)mSet[r.month]=1;});'
-    +'    months=Object.keys(mSet).sort(function(a,b){'
+    +'    var months=Object.keys(mSet).sort(function(a,b){'
     +'      var ai=MO.indexOf(a.split(" ")[0]),bi=MO.indexOf(b.split(" ")[0]);'
     +'      var ay=parseInt(a.split(" ")[1]||0,10),by=parseInt(b.split(" ")[1]||0,10);'
     +'      return ay!==by?ay-by:ai-bi;'
@@ -8782,7 +8799,6 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'        mBT+=bT;mBI+=bI;mBC+=bC;mBS+=bS;mGT+=gT;mGI+=gI;mGC+=gC;mGS+=gS;'
     +'        x.st==="M"?cM++:x.st==="B"?cB++:cG++;'
     +'      });'
-    // Month subtotal row
     +'      csv.push(["","",_esc("↳ "+mo+" SUBTOTAL ("+rows.length+": M:"+cM+" B:"+cB+" G:"+cG+")"),"","","","","","SUBTOTAL",'
     +'        _n2(mBT),_n2(mBI),_n2(mBC),_n2(mBS),"","","","",'
     +'        _n2(mGT),_n2(mGI),_n2(mGC),_n2(mGS)]);'
@@ -8791,11 +8807,10 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'      grandGT+=mGT;grandGI+=mGI;grandGC+=mGC;grandGS+=mGS;'
     +'    });'
     +'  });'
-    // Grand total row
     +'  csv.push(["GRAND TOTAL","","","","","","","","TOTAL",'
     +'    _n2(grandBT),_n2(grandBI),_n2(grandBC),_n2(grandBS),"","","","",'
     +'    _n2(grandGT),_n2(grandGI),_n2(grandGC),_n2(grandGS)]);'
-    +'  var fn="ITC_Recon_Full_FY_"+new Date().toISOString().slice(0,10)+".csv";'
+    +'  var fn="ITC_Recon_FY"+(selCo?"_"+selCo:"")+(selBr?"_"+selBr.replace(/ /g,"_"):"")+".csv";'
     +'  _dlCSV(csv,fn);'
     +'}'
     // Event delegation for dl-btn clicks → downloadMonthXL
@@ -8804,7 +8819,22 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'  if(!btn)return;'
     +'  downloadMonthXL(btn.dataset.co,btn.dataset.br,btn.dataset.mo);'
     +'});';
-
+    +'  var br=decodeURIComponent(brEnc),mo=decodeURIComponent(moEnc);'
+    +'  var books=_itc.filter(function(r){return r.coKey===coKey&&(r.branch||"")===br&&r.month===mo;});'
+    +'  var g2bInvs=[];'
+    +'  _g2b.forEach(function(d){'
+    +'    if(d.coKey!==coKey||(d.branch||"")!==br||d.month!==mo)return;'
+    +'    (d.invoiceList||[]).forEach(function(inv){g2bInvs.push(inv);});'
+    +'  });'
+    +'  var idx={};'
+    +'  g2bInvs.forEach(function(inv){var k=inv.inumNorm||_n(inv.inum);if(k)idx[k]=inv;});'
+    +'  var seen={},rows=[];'
+    +'  books.forEach(function(r){'
+    +'    var k=_n(r.refNo);var g=k?idx[k]:null;'
+    +'    var matched=g&&_ns(r.vendorName,g.supplierName);'
+    +'    if(matched)seen[k]=true;'
+    +'    rows.push({st:matched?"M":"B",r:r,g:matched?g:null});'
+    +'  });'
   /* ── Filter + ITC Type toggle JS ──────────────────────────── */
   var filterFn = '(function(){'
     +'function doF(){'
@@ -8851,44 +8881,7 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:inherit}'
     +'.btn:hover{background:rgba(255,255,255,.2)}'
     +'.wrap{padding:16px 20px}'
-    // ── dialog styles — fullscreen modal, high contrast, scrollable
-    +'dialog{'
-    +'  border:none;padding:0;margin:0;'
-    +'  width:100vw;max-width:100vw;height:100vh;max-height:100vh;'
-    +'  background:#f3f2f1;display:flex;flex-direction:column;'
-    +'  box-shadow:none;overflow:hidden;'
-    +'}'
-    +'dialog::backdrop{background:rgba(0,0,0,.6)}'
-    +'.dlg-hdr{'
-    +'  background:#1a1a2e;padding:0 18px;height:52px;'
-    +'  display:flex;align-items:center;gap:10px;flex-shrink:0;'
-    +'  border-bottom:2px solid #0078d4;position:sticky;top:0;z-index:99;'
-    +'}'
-    +'.dlg-title{color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}'
-    +'.dlg-badges{display:flex;gap:6px;flex-wrap:wrap}'
-    +'.dlg-actions{margin-left:auto;display:flex;gap:8px;flex-shrink:0}'
-    +'.dlg-btn{'
-    +'  display:inline-flex;align-items:center;gap:4px;'
-    +'  padding:5px 13px;border-radius:3px;font-size:12px;font-weight:600;'
-    +'  cursor:pointer;font-family:inherit;white-space:nowrap;'
-    +'  border:1px solid rgba(255,255,255,.25);'
-    +'  background:rgba(255,255,255,.12);color:#fff;'
-    +'}'
-    +'.dlg-btn:hover{background:rgba(255,255,255,.22)}'
-    +'.dlg-btn.grn{background:rgba(0,128,0,.35);border-color:rgba(0,200,0,.4)}'
-    +'.dlg-btn.red{background:rgba(180,0,0,.35);border-color:rgba(255,80,80,.4);font-size:14px;padding:4px 14px}'
-    +'.dlg-body{flex:1;overflow:auto;padding:0}'
-    +'table.inv{border-collapse:collapse;width:100%;background:#fff;min-width:1250px}'
-    +'table.inv thead{position:sticky;top:0;z-index:9}'
-    +'table.inv th{'
-    +'  padding:8px 9px;font-size:10.5px;font-weight:700;text-transform:uppercase;'
-    +'  border-bottom:2px solid #c8c6c4;text-align:right;white-space:nowrap;'
-    +'  letter-spacing:.3px;'
-    +'}'
-    +'table.inv th.L{text-align:left}'
-    +'table.inv td{padding:8px 9px;font-size:12.5px;border-bottom:1px solid #f3f2f1}'
-    +'table.inv tr:hover td{background:rgba(0,120,212,.04)}'
-    +'@media print{.tb,.fb,dialog{display:none}body{background:#fff}}'
+    +'@media print{.tb,.fb{display:none}body{background:#fff}}'
     +'</style></head><body>'
     +'<div class="tb">'
     +'<div class="logo">GST</div>'
@@ -8906,7 +8899,6 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'<span style="font-size:11px;color:#8a8886;margin-left:4px">&#128229; Click <strong>Monthly Excel</strong> on any row to download invoice-wise detail</span>'
     +'</div>'
     +'<div class="wrap" id="bodyWrap">'+bodyHTML+'</div>'
-    // ── Scripts ──────────────────────────────────────────────────
     +'<scr'+'ipt>'+invDetailFn+'</scr'+'ipt>'
     +'<scr'+'ipt>'+filterFn+'</scr'+'ipt>'
     +'</body></html>';
