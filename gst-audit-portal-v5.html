@@ -8423,7 +8423,9 @@ window.openG2BRecon = function(initCoKey, initMonth) {
   });
 
   /* ── Aggregate month-wise summaries ──────────────────────── */
-  // Group: { coKey+branch -> { month -> {bTax,bIg,bCg,bSg, gTax,gIg,gCg,gSg} } }
+  // NOTE: Exclude ISD entries (itcType='ISD') from branch-wise recon.
+  // ISD is distributed from head office and is shown as a separate row
+  // on the dashboard — mixing it into branch sections inflates figures.
   var grp = {};
   function getGrp(coKey,branch,month){
     var k=coKey+'|||'+(branch||'');
@@ -8433,14 +8435,20 @@ window.openG2BRecon = function(initCoKey, initMonth) {
   }
   (APP.itcData||[]).forEach(function(r){
     if(!r.month) return;
+    if(r.itcType === 'ISD') return;   // ← exclude ISD: shown separately on dashboard
     var m=getGrp(r.coKey,r.branch,r.month);
     m.bTax+=(r.taxable||0); m.bIg+=(r.igst||0); m.bCg+=(r.cgst||0); m.bSg+=(r.sgst||0);
   });
   (APP.gstr2bData||[]).forEach(function(d){
-    (d.invoiceList||[]).forEach(function(inv){
-      var m=getGrp(d.coKey,d.branch||'',d.month);
-      m.gTax+=(inv.txval||0); m.gIg+=(inv.igst||0); m.gCg+=(inv.cgst||0); m.gSg+=(inv.sgst||0);
-    });
+    if(!d.month) return;
+    // Use document-level totals (matches dashboard which uses d.igst/d.taxable).
+    // d.invoiceList only has B2B invoices — it EXCLUDES CDNR and other tables,
+    // which is why summing invoiceList gives a lower number than the dashboard.
+    var m=getGrp(d.coKey,d.branch||'',d.month);
+    m.gTax+=(d.taxable||d.totalTaxable||0);
+    m.gIg +=(d.igst||0);
+    m.gCg +=(d.cgst||0);
+    m.gSg +=(d.sgst||0);
   });
 
   /* ── Collect all branches per company ───────────────────────*/
@@ -8543,7 +8551,7 @@ window.openG2BRecon = function(initCoKey, initMonth) {
 
   /* ── Invoice-wise detail function ─────────────────────────── */
   // Serialise data for injection into popup window
-  var _itcData = (APP.itcData||[]).map(function(r){
+  var _itcData = (APP.itcData||[]).filter(function(r){ return r.itcType !== 'ISD'; }).map(function(r){
     return {moveNo:r.moveNo,billDate:r.billDate,refNo:r.refNo,vendorName:r.vendorName,
             taxable:r.taxable,igst:r.igst,cgst:r.cgst,sgst:r.sgst,
             coKey:r.coKey,branch:r.branch||'',month:r.month,isMisc:!!r.isMisc};
