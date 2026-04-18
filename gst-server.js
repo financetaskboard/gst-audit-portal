@@ -220,7 +220,8 @@ const BRANCH_MAP = {
   // ── Browntape — Sales, Credit & Purchase journals ─────────────
   'SBTM':'Goa',         'CMS':'Goa',        'SBTE':'Goa',
   'SBT':'Goa',          'CENT':'Goa',       'CDIY':'Goa',
-  'BTBIL':'Goa',        'MISBT':'Goa',
+  'BTBIL':'Goa',        'MISBT':'Goa',      'RBTBIL':'Goa',
+  'RBTBIL':'Goa',
   // ── Easemy Business ───────────────────────────────────────────
   'BILLE':'Haryana',
   // ── Roxfortech ───────────────────────────────────────────────
@@ -252,6 +253,8 @@ const COMPANY_MAP = {
   'SBTE':'Browntape Infrosolution Pvt Ltd', 'SBT':'Browntape Infrosolution Pvt Ltd',
   'CENT':'Browntape Infrosolution Pvt Ltd', 'CDIY':'Browntape Infrosolution Pvt Ltd',
   'BTBIL':'Browntape Infrosolution Pvt Ltd','MISBT':'Browntape Infrosolution Pvt Ltd',
+  'RBTBIL':'Browntape Infrosolution Pvt Ltd',
+  'RBTBIL':'Browntape Infrosolution Pvt Ltd',
   // ── Easemy Business ───────────────────────────────────────────
   'BILLE':'Easemy Business Pvt Ltd',
   // ── Roxfortech ───────────────────────────────────────────────
@@ -272,7 +275,7 @@ const COKEY_MAP = {
   'BILL':'gsl', 'BGO':'gsl',
   // ── Browntape ────────────────────────────────────────────────
   'SBTM':'bt', 'CMS':'bt',   'SBTE':'bt',   'SBT':'bt',
-  'CENT':'bt', 'CDIY':'bt',  'BTBIL':'bt',  'MISBT':'bt',
+  'CENT':'bt', 'CDIY':'bt',  'BTBIL':'bt',  'MISBT':'bt',  'RBTBIL':'bt',  'RBTBIL':'bt',
   // ── Easemy ────────────────────────────────────────────────────
   'BILLE':'em',
   // ── Roxfortech ───────────────────────────────────────────────
@@ -626,7 +629,9 @@ const RCM_JOURNAL_MAP = {
   'DWB':   { branch: 'West Bengal',   company: 'Ginni Systems Limited',                    coKey: 'gsl'   },
   'DKN':   { branch: 'Karnataka',     company: 'Ginni Systems Limited',                    coKey: 'gsl'   },
   'BTBIL': { branch: 'Goa',           company: 'Browntape Technologies Private Limited',   coKey: 'bt'    },
-  'BILLE': { branch: 'Haryana',       company: 'Easemy Business Private Limited',          coKey: 'em'    },
+  'RBTBIL':{ branch: 'Goa',           company: 'Browntape Infrosolution Pvt Ltd',           coKey: 'bt'    },
+  'BGO':   { branch: 'Goa',           company: 'Ginni Systems Ltd',                         coKey: 'gsl'   },
+  'BILLE': { branch: 'Haryana',       company: 'Easemy Business Private Limited',           coKey: 'em'    },
   'RBHR':  { branch: 'Haryana',       company: 'Roxfortech Infosolutions Private Limited', coKey: 'roxfo' },
   'BILRO': { branch: 'Haryana',       company: 'Roxfortech Infosolutions Private Limited', coKey: 'roxfo' },
 };
@@ -841,13 +846,16 @@ app.post('/api/sync/itc', async (req, res) => {
       if (!acInfo) return;
 
       if (!moveGroups[moveId]) {
-        const brInfo    = getBranch(moveNo);
-        const usePrefix = (brInfo.coKey !== 'other');
-        // For MISC entries (move_type='entry'), prefix won't match known journals.
-        // Fall back to account-code company; Ginni Systems MISC → default Haryana branch.
-        const isMiscEntry = !usePrefix;   // prefix not in maps = MISC-style entry
+        const brInfo        = getBranch(moveNo);
+        const usePrefix     = (brInfo.coKey !== 'other');
         const resolvedCoKey = usePrefix ? brInfo.coKey : acInfo.coKey;
-        const defaultBranch = (resolvedCoKey === 'gsl' && isMiscEntry) ? 'Haryana' : brInfo.branch;
+        const isMiscEntry   = !usePrefix;   // no recognised prefix = MISC-style entry
+
+        // Per-company default branch for MISC entries (no invoice prefix to guide us)
+        const MISC_DEFAULT_BRANCH = { gsl:'Haryana', em:'Haryana', bt:'Goa', roxfo:'Haryana' };
+        const defaultBranch = (isMiscEntry && resolvedCoKey in MISC_DEFAULT_BRANCH)
+          ? MISC_DEFAULT_BRANCH[resolvedCoKey]
+          : brInfo.branch;
 
         moveGroups[moveId] = {
           moveId,
