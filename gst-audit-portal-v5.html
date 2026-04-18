@@ -8712,7 +8712,11 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'    (d.invoiceList||[]).forEach(function(inv){g2bInvs.push(inv);});'
     +'  });'
     +'  var idx={};'
-    +'  g2bInvs.forEach(function(inv){var k=inv.inumNorm||_n(inv.inum);if(k)idx[k]=inv;});'
+    // FIX: apply _n() to inumNorm itself so slashes/dashes are stripped from BOTH sides.
+    // Previously inumNorm kept slashes ("TCPL/2025/0005") while _n(r.refNo) removed them
+    // ("TCPL20250005"), so the lookup always missed — entries appeared as "2B Only" in
+    // the Excel even though the portal showed "Matched".
+    +'  g2bInvs.forEach(function(inv){var k=_n(inv.inumNorm||inv.inum);if(k)idx[k]=inv;});'
     +'  var seen={},rows=[];'
     +'  books.forEach(function(r){'
     +'    var k=_n(r.refNo);var g=k?idx[k]:null;'
@@ -8720,7 +8724,7 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'    if(matched)seen[k]=true;'
     +'    rows.push({st:matched?"M":"B",r:r,g:matched?g:null});'
     +'  });'
-    +'  g2bInvs.forEach(function(inv){var k=inv.inumNorm||_n(inv.inum);if(!seen[k])rows.push({st:"G",r:null,g:inv});});'
+    +'  g2bInvs.forEach(function(inv){var k=_n(inv.inumNorm||inv.inum);if(!seen[k])rows.push({st:"G",r:null,g:inv});});'
     +'  return rows;'
     +'}'
     // ── Monthly Excel download ────────────────────────────────────
@@ -8819,22 +8823,7 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     +'  if(!btn)return;'
     +'  downloadMonthXL(btn.dataset.co,btn.dataset.br,btn.dataset.mo);'
     +'});';
-    +'  var br=decodeURIComponent(brEnc),mo=decodeURIComponent(moEnc);'
-    +'  var books=_itc.filter(function(r){return r.coKey===coKey&&(r.branch||"")===br&&r.month===mo;});'
-    +'  var g2bInvs=[];'
-    +'  _g2b.forEach(function(d){'
-    +'    if(d.coKey!==coKey||(d.branch||"")!==br||d.month!==mo)return;'
-    +'    (d.invoiceList||[]).forEach(function(inv){g2bInvs.push(inv);});'
-    +'  });'
-    +'  var idx={};'
-    +'  g2bInvs.forEach(function(inv){var k=inv.inumNorm||_n(inv.inum);if(k)idx[k]=inv;});'
-    +'  var seen={},rows=[];'
-    +'  books.forEach(function(r){'
-    +'    var k=_n(r.refNo);var g=k?idx[k]:null;'
-    +'    var matched=g&&_ns(r.vendorName,g.supplierName);'
-    +'    if(matched)seen[k]=true;'
-    +'    rows.push({st:matched?"M":"B",r:r,g:matched?g:null});'
-    +'  });'
+
   /* ── Filter + ITC Type toggle JS ──────────────────────────── */
   var filterFn = '(function(){'
     +'function doF(){'
