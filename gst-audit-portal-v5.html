@@ -287,7 +287,12 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
     </div>
   </div>
   <div class="tdiv"></div>
-  <div class="fy-badge">FY 2025-26</div>
+  <select id="fy-selector" onchange="switchFY(this.value)" title="Switch Financial Year"
+    style="background:rgba(0,120,212,0.22);border:1px solid rgba(0,120,212,0.45);color:#62b6f7;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px;cursor:pointer;font-family:inherit;outline:none;appearance:none;-webkit-appearance:none;">
+    <option value="2024-25">FY 2024-25</option>
+    <option value="2025-26" selected>FY 2025-26</option>
+    <option value="2026-27">FY 2026-27</option>
+  </select>
   <div class="conn"><div class="cdot"></div>Odoo Connected</div>
   <div class="tr">
     <button class="ibt" title="Notifications">🔔</button>
@@ -1230,16 +1235,17 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
 const APP = {
   salesData: [],
   creditData: [],
-  gstr1Data: [],          // Array of { company, coKey, gstin, month, year, fy, b2b:[], b2cs:[], cdnr:[], importedOn, ... }
-  gstr1aData: [],         // Array of GSTR-1A amendment entries (same shape as gstr1Data but from b2ba/b2csa/etc. keys)
-  gstr3bData: [],         // always defined — never undefined
-  rcmData: [],            // always defined — never undefined
-  gstr2bData: [],         // GSTR-2B JSON imports (ITC register)
-  isdData: [],            // ISD (GSTR-6) JSON imports — Input Service Distributor
-  purchaseData: [],       // Odoo purchase/vendor bills (input side)
-  itcData: [],            // ITC Books — from Odoo ITC receivable accounts (account-wise sync)
+  gstr1Data: [],
+  gstr1aData: [],
+  gstr3bData: [],
+  rcmData: [],
+  gstr2bData: [],
+  isdData: [],
+  purchaseData: [],
+  itcData: [],
+  activeFY: '2025-26',    // ← current financial year (persisted in gst_cfg)
   gstinMap: { gsl:'', em:'', bt:'', roxfo:'', 'gsl-goa':'', 'gsl-mh':'', 'gsl-wb':'', 'gsl-ka':'', 'gsl-tl':'' },
-  forexOverrides: {},     // { invoice_no: { taxable, cgst, sgst, igst, currency, rate, note } }
+  forexOverrides: {},
   odooConfig: {
     url: 'https://ginesys.odoo.com',
     db: 'ginesys',
@@ -1420,13 +1426,13 @@ function switchDashboard(type) {
     if (inputView) inputView.style.display = 'none';
     if (salesBtn)  { salesBtn.style.background='#0078d4'; salesBtn.style.color='#fff'; }
     if (inputBtn)  { inputBtn.style.background='#fff'; inputBtn.style.color='var(--muted)'; }
-    if (pbc) pbc.textContent = '/ Sales · Company-Level Reconciliation · FY 2025-26';
+    if (pbc) pbc.textContent = '/ Sales · Company-Level Reconciliation · FY ' + (APP.activeFY||'2025-26');
   } else {
     if (salesView) salesView.style.display = 'none';
     if (inputView) inputView.style.display = '';
     if (inputBtn)  { inputBtn.style.background='#107c10'; inputBtn.style.color='#fff'; }
     if (salesBtn)  { salesBtn.style.background='#fff'; salesBtn.style.color='var(--muted)'; }
-    if (pbc) pbc.textContent = '/ Input · ITC Reconciliation · FY 2025-26';
+    if (pbc) pbc.textContent = '/ Input · ITC Reconciliation · FY ' + (APP.activeFY||'2025-26');
     updateInputDash();
   }
 }
@@ -3822,49 +3828,143 @@ function _lsSet(key, data) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  FINANCIAL YEAR MANAGEMENT
+//  Each FY stores data under separate localStorage keys so you
+//  can switch between years without losing any data.
+// ══════════════════════════════════════════════════════════════
+var FY_LIST = [
+  {id:'2024-25', label:'FY 2024-25', from:'2024-04-01', to:'2025-03-31', sfx:'_2425'},
+  {id:'2025-26', label:'FY 2025-26', from:'2025-04-01', to:'2026-03-31', sfx:'_2526'},
+  {id:'2026-27', label:'FY 2026-27', from:'2026-04-01', to:'2027-03-31', sfx:'_2627'},
+];
+
+// Returns FY-specific localStorage key, e.g. _fyK('gst_itc') → 'gst_itc_2526'
+function _fyK(baseKey) {
+  var fy = APP.activeFY || '2025-26';
+  var fyObj = FY_LIST.find(function(f){ return f.id === fy; });
+  return baseKey + (fyObj ? fyObj.sfx : '_2526');
+}
+
+// Returns migration fallback: for FY 25-26, also check the legacy un-suffixed key
+function _fyGet(baseKey) {
+  var v = localStorage.getItem(_fyK(baseKey));
+  // Migration: FY 25-26 data was stored without suffix — use it as fallback
+  if (!v && (APP.activeFY || '2025-26') === '2025-26') {
+    v = localStorage.getItem(baseKey);
+    // If found, migrate to FY-specific key so future saves use the right slot
+    if (v) { try { localStorage.setItem(_fyK(baseKey), v); } catch(e){} }
+  }
+  return v;
+}
+
+// Returns "FY YYYY-YY" label for the active FY
+function _fyLabel() { return 'FY ' + (APP.activeFY || '2025-26'); }
+
+// Refreshes all FY-dependent labels in the UI after a FY switch
+function _updateFYLabels() {
+  var fy = _fyLabel();
+  // Topbar selector
+  var sel = document.getElementById('fy-selector');
+  if (sel) sel.value = APP.activeFY || '2025-26';
+  // Breadcrumb
+  var pbc = document.getElementById('dash-pbc');
+  if (pbc && pbc.textContent.indexOf('FY') > -1)
+    pbc.textContent = pbc.textContent.replace(/FY \d{4}-\d{2}/, fy);
+}
+
+// Switch Financial Year: save current, clear, load new FY data, re-render
+function switchFY(newFY) {
+  var curr = APP.activeFY || '2025-26';
+  if (newFY === curr) return;
+
+  // Save current FY data before switching
+  try { saveAppState(); } catch(e){}
+
+  // Switch
+  APP.activeFY = newFY;
+  var fyObj = FY_LIST.find(function(f){ return f.id === newFY; });
+  if (fyObj) {
+    APP.odooConfig = APP.odooConfig || {};
+    APP.odooConfig.fromDate = fyObj.from;
+    APP.odooConfig.toDate   = fyObj.to;
+  }
+
+  // Persist activeFY in config
+  try {
+    _lsSet('gst_cfg', {
+      gstinMap:APP.gstinMap, odooConfig:APP.odooConfig,
+      lastSync:APP.lastSync, forexOverrides:APP.forexOverrides,
+      savedAt:new Date().toISOString(), activeFY:newFY
+    });
+  } catch(e){}
+
+  // Clear all in-memory data
+  APP.salesData=[]; APP.creditData=[]; APP.gstr2bData=[];
+  APP.itcData=[]; APP.isdData=[]; APP.gstr3bData=[];
+  APP.gstr1Data=[]; APP.gstr1aData=[]; APP.rcmData=[];
+  APP.gstr2bRefSet={};
+
+  // Load new FY data from localStorage (which also runs UI rebuild)
+  try { loadAppState(); } catch(e){ console.warn('switchFY loadAppState:', e); }
+
+  // Extra re-renders for modules that have their own state
+  try { rebuildGSTR2BRefSet(); } catch(e){}
+  try { renderGSTR2BView(); }    catch(e){}
+  try { if(typeof window.renderG2BHistoryCombined==='function') window.renderG2BHistoryCombined(); } catch(e){}
+  try { renderGSTR1History(); renderGSTR1View(); updateGSTR1StatusBar(); } catch(e){}
+  try { if(typeof window.renderGSTR3BHistory==='function') window.renderGSTR3BHistory(); } catch(e){}
+  try { if(typeof window.renderGSTR3BView==='function')   window.renderGSTR3BView(); }   catch(e){}
+  try { if(typeof window.renderRCMTable==='function')     window.renderRCMTable(); }     catch(e){}
+  try { if(typeof window.renderITCTable==='function')     window.renderITCTable(); }     catch(e){}
+  try { updateStorageBadge(); } catch(e){}
+
+  // Update selector
+  var sel = document.getElementById('fy-selector');
+  if (sel) sel.value = newFY;
+  _updateFYLabels();
+
+  toast('✅ Switched to FY ' + newFY + ' — sync or upload data for this year', '📅');
+}
+
 function saveAppState(){
   const now = new Date().toISOString();
-  // Config (tiny)
+  // Config is shared (holds activeFY)
   _lsSet('gst_cfg', { gstinMap:APP.gstinMap, odooConfig:APP.odooConfig,
-    lastSync:APP.lastSync, forexOverrides:APP.forexOverrides, savedAt:now });
-  // GSTR-3B (small — just parsed summary numbers)
-  _lsSet('gst_3b', APP.gstr3bData || []);
-  // RCM (medium — transaction list)
-  _lsSet('gst_rcm', APP.rcmData || []);
-  // GSTR-1 — strip the heavy row arrays, keep only summary totals
+    lastSync:APP.lastSync, forexOverrides:APP.forexOverrides, savedAt:now,
+    activeFY: APP.activeFY || '2025-26' });
+  // All data stored under FY-specific keys
+  _lsSet(_fyK('gst_3b'), APP.gstr3bData || []);
+  _lsSet(_fyK('gst_rcm'), APP.rcmData || []);
   var g1slim = (APP.gstr1Data||[]).map(function(d){
     var s = Object.assign({}, d);
     delete s.b2bRows; delete s.b2csRows; delete s.b2clRows;
     delete s.expRows; delete s.cdnrRows;
     return s;
   });
-  _lsSet('gst_g1', g1slim);
-  // Sales + Credit (re-syncable from Odoo)
-  _lsSet('gst_sales',  APP.salesData  || []);
-  _lsSet('gst_credit', APP.creditData || []);
-  // GSTR-2B (input ITC)
-  _lsSet('gst_g2b', APP.gstr2bData || []);
-  // ISD (GSTR-6 Input Service Distributor)
-  _lsSet('gst_isd', APP.isdData || []);
-  // ITC Books (Odoo ITC receivable accounts)
-  _lsSet('gst_itc', APP.itcData || []);
-  // GSTR-1A — Amendment return (strip heavy row arrays before persisting)
+  _lsSet(_fyK('gst_g1'), g1slim);
+  _lsSet(_fyK('gst_sales'),  APP.salesData  || []);
+  _lsSet(_fyK('gst_credit'), APP.creditData || []);
+  _lsSet(_fyK('gst_g2b'), APP.gstr2bData || []);
+  _lsSet(_fyK('gst_isd'), APP.isdData || []);
+  _lsSet(_fyK('gst_itc'), APP.itcData || []);
   var g1aSlim = (APP.gstr1aData||[]).map(function(d){
     var s = Object.assign({}, d);
     delete s.b2baRows; delete s.b2csaRows; delete s.b2claRows;
     delete s.expaRows; delete s.cdnraRows;
     return s;
   });
-  _lsSet('gst_g1a', g1aSlim);
+  _lsSet(_fyK('gst_g1a'), g1aSlim);
   updateStorageBadge();
 }
 
 function loadAppState(){
-  // Config
+  // ── Step 1: Config — read activeFY first so _fyK() works correctly ──
   try {
     var cfg = localStorage.getItem('gst_cfg');
     if (cfg) {
       var c = JSON.parse(cfg);
+      APP.activeFY = c.activeFY || '2025-26';
       APP.gstinMap = Object.assign({ gsl:'', em:'', bt:'', roxfo:'', 'gsl-goa':'', 'gsl-mh':'', 'gsl-wb':'', 'gsl-ka':'', 'gsl-tl':'' }, c.gstinMap || {});
       APP.lastSync       = c.lastSync       || { sales:null, credit:null };
       APP.forexOverrides = c.forexOverrides || {};
@@ -3872,33 +3972,33 @@ function loadAppState(){
     }
   } catch(e) { console.warn('cfg load:', e); }
 
-  // GSTR-1
+  // ── Sync FY selector in topbar ───────────────────────────────
+  var fySel = document.getElementById('fy-selector');
+  if (fySel) fySel.value = APP.activeFY || '2025-26';
+
+  // ── Step 2: GSTR-1 (FY-specific with migration) ──────────────
   try {
-    var g1raw = localStorage.getItem('gst_g1');
+    var g1raw = _fyGet('gst_g1');
     if (g1raw) {
       APP.gstr1Data = JSON.parse(g1raw) || [];
-      // Month migration
       APP.gstr1Data = APP.gstr1Data.map(function(d){
         if (d.month && d.year && !/\d{4}/.test(d.month))
           return Object.assign({}, d, {month:d.month+' '+d.year, period:d.month+' '+d.year});
         return d;
       });
     } else {
-      // Migrate from old combined key
       var old = localStorage.getItem('gst_audit_portal_v1');
       if (old) { var o=JSON.parse(old); APP.gstr1Data=o.gstr1Data||[]; }
     }
   } catch(e) { console.warn('g1 load:', e); }
 
-  // GSTR-3B
+  // ── GSTR-3B ──────────────────────────────────────────────────
   try {
-    var raw3b = localStorage.getItem('gst_3b');
+    var raw3b = _fyGet('gst_3b');
     if (raw3b) { APP.gstr3bData = JSON.parse(raw3b) || []; }
     else {
-      // Legacy key
       var lb = localStorage.getItem('gst_audit_3b_v1');
       if (lb) { var p=JSON.parse(lb); if(Array.isArray(p)&&p.length) APP.gstr3bData=p; }
-      // Old combined key
       if (!APP.gstr3bData.length) {
         var old2 = localStorage.getItem('gst_audit_portal_v1');
         if (old2) { var o2=JSON.parse(old2); if(o2.gstr3bData&&o2.gstr3bData.length) APP.gstr3bData=o2.gstr3bData; }
@@ -3906,15 +4006,13 @@ function loadAppState(){
     }
   } catch(e) { console.warn('3b load:', e); }
 
-  // RCM
+  // ── RCM ──────────────────────────────────────────────────────
   try {
-    var rawrcm = localStorage.getItem('gst_rcm');
+    var rawrcm = _fyGet('gst_rcm');
     if (rawrcm) { APP.rcmData = JSON.parse(rawrcm) || []; }
     else {
-      // Legacy key
       var lr = localStorage.getItem('gst_audit_rcm_v1');
       if (lr) { var p2=JSON.parse(lr); if(Array.isArray(p2)&&p2.length) APP.rcmData=p2; }
-      // Old combined key
       if (!APP.rcmData.length) {
         var old3 = localStorage.getItem('gst_audit_portal_v1');
         if (old3) { var o3=JSON.parse(old3); if(o3.rcmData&&o3.rcmData.length) APP.rcmData=o3.rcmData; }
@@ -3922,9 +4020,9 @@ function loadAppState(){
     }
   } catch(e) { console.warn('rcm load:', e); }
 
-  // Sales
+  // ── Sales ─────────────────────────────────────────────────────
   try {
-    var rawS = localStorage.getItem('gst_sales');
+    var rawS = _fyGet('gst_sales');
     if (rawS) { APP.salesData = JSON.parse(rawS) || []; }
     else {
       var old4 = localStorage.getItem('gst_audit_portal_v1');
@@ -3932,9 +4030,9 @@ function loadAppState(){
     }
   } catch(e) { console.warn('sales load:', e); }
 
-  // Credit
+  // ── Credit ────────────────────────────────────────────────────
   try {
-    var rawC = localStorage.getItem('gst_credit');
+    var rawC = _fyGet('gst_credit');
     if (rawC) { APP.creditData = JSON.parse(rawC) || []; }
     else {
       var old5 = localStorage.getItem('gst_audit_portal_v1');
@@ -3942,36 +4040,34 @@ function loadAppState(){
     }
   } catch(e) { console.warn('credit load:', e); }
 
-  // GSTR-2B (input ITC)
+  // ── GSTR-2B ───────────────────────────────────────────────────
   try {
-    var rawG2B = localStorage.getItem('gst_g2b');
+    var rawG2B = _fyGet('gst_g2b');
     if (rawG2B) { APP.gstr2bData = JSON.parse(rawG2B) || []; }
-    // Also check the dedicated key set by the GSTR-2B module
     if (!APP.gstr2bData.length) {
       var rawG2B2 = localStorage.getItem('gst_audit_portal_v1_g2b');
       if (rawG2B2) { APP.gstr2bData = JSON.parse(rawG2B2) || []; }
     }
   } catch(e) { console.warn('g2b load:', e); }
 
-  // ITC Books (Odoo ITC receivable accounts)
+  // ── ITC Books ─────────────────────────────────────────────────
   try {
-    var rawITC = localStorage.getItem('gst_itc');
+    var rawITC = _fyGet('gst_itc');
     if (rawITC) {
       APP.itcData = JSON.parse(rawITC) || [];
-      // Fix any wrong company attribution using SERIES_MAP (e.g. RBHR → GSL)
       if (typeof applySeriesMapToITC === 'function') APP.itcData = applySeriesMapToITC(APP.itcData);
     }
   } catch(e) { console.warn('itc load:', e); }
 
-  // ISD — GSTR-6 Input Service Distributor
+  // ── ISD (GSTR-6) ──────────────────────────────────────────────
   try {
-    var rawISD = localStorage.getItem('gst_isd');
+    var rawISD = _fyGet('gst_isd');
     if (rawISD) { APP.isdData = JSON.parse(rawISD) || []; }
   } catch(e) { console.warn('isd load:', e); }
 
-  // GSTR-1A — Amendment return
+  // ── GSTR-1A ───────────────────────────────────────────────────
   try {
-    var rawG1A = localStorage.getItem('gst_g1a');
+    var rawG1A = _fyGet('gst_g1a');
     if (rawG1A) { APP.gstr1aData = JSON.parse(rawG1A) || []; }
   } catch(e) { console.warn('g1a load:', e); }
 
@@ -3997,6 +4093,7 @@ function loadAppState(){
     } catch(e) { toast('💾 Data restored from local storage','💾'); }
   }
   updateStorageBadge();
+  try { _updateFYLabels(); } catch(e){}
 }
 
 
@@ -4008,7 +4105,18 @@ function loadAppState(){
 var SERVER_STORAGE_ENABLED = false;  // auto-detected on init
 
 var ALL_LS_KEYS = [
-  'gst_cfg','gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm',
+  'gst_cfg',
+  // FY 2025-26 (primary year)
+  'gst_sales_2526','gst_credit_2526','gst_g1_2526','gst_3b_2526','gst_rcm_2526',
+  'gst_g2b_2526','gst_itc_2526','gst_isd_2526','gst_g1a_2526',
+  // FY 2026-27
+  'gst_sales_2627','gst_credit_2627','gst_g1_2627','gst_3b_2627','gst_rcm_2627',
+  'gst_g2b_2627','gst_itc_2627','gst_isd_2627','gst_g1a_2627',
+  // FY 2024-25
+  'gst_sales_2425','gst_credit_2425','gst_g1_2425','gst_3b_2425','gst_rcm_2425',
+  'gst_g2b_2425','gst_itc_2425','gst_isd_2425','gst_g1a_2425',
+  // Legacy keys (kept for migration + backward compat)
+  'gst_sales','gst_credit','gst_g1','gst_3b','gst_rcm',
   'gst_g2b','gst_itc','gst_isd','gst_g1a',
   'gst_audit_portal_v1','gst_audit_portal_v1_ext','gst_audit_portal_v1_g2b',
   'gst_audit_3b_v1','gst_audit_rcm_v1',
@@ -5169,24 +5277,22 @@ APP.rcmData    = APP.rcmData    || [];
 
 function saveGstr3bState() {
   try {
-    // FIX: write to primary keys ('gst_3b' / 'gst_rcm') that loadAppState()
-    // reads first. The old code wrote to LS_KEY_3B ('gst_audit_3b_v1') which
-    // is only a fallback — any saveAppState() call would overwrite 'gst_3b'
-    // with [] and the fallback was never reached on reload, losing 3B data.
-    _lsSet('gst_3b',  APP.gstr3bData || []);
-    _lsSet('gst_rcm', APP.rcmData    || []);
-    _lsSet('gst_itc', APP.itcData    || []);
+    _lsSet(_fyK('gst_3b'),  APP.gstr3bData || []);
+    _lsSet(_fyK('gst_rcm'), APP.rcmData    || []);
+    _lsSet(_fyK('gst_itc'), APP.itcData    || []);
   } catch(e) { toast('⚠️ Storage error: ' + e.message, '⚠️'); }
 }
 
 function loadGstr3bState() {
   try {
-    const d3b  = localStorage.getItem(LS_KEY_3B);
-    const drcm = localStorage.getItem(LS_KEY_RCM);
-    if (d3b)  APP.gstr3bData = JSON.parse(d3b);
-    if (drcm) APP.rcmData    = JSON.parse(drcm);
-    // Do NOT render here — page elements don't exist yet (injected later by IIFE).
-    // Rendering is handled by loadExtState() which runs after injectPages().
+    // Use FY-specific key with automatic migration fallback for FY 25-26
+    const d3b  = _fyGet('gst_3b');
+    const drcm = _fyGet('gst_rcm');
+    // Fallback to old legacy constants if FY-specific key also empty
+    const d3bFallback  = d3b  || localStorage.getItem(LS_KEY_3B);
+    const drcmFallback = drcm || localStorage.getItem(LS_KEY_RCM);
+    if (d3bFallback)  APP.gstr3bData = JSON.parse(d3bFallback);
+    if (drcmFallback) APP.rcmData    = JSON.parse(drcmFallback);
   } catch(e) { console.warn('loadGstr3bState:', e); }
 }
 
@@ -7098,7 +7204,7 @@ loadGstr3bState();
       +'</head><body>'
       +'<div class="topbar"><div class="logo">GST</div>'
       +'<span style="color:#fff;font-size:13px;font-weight:600">&#128256; GSTR-1 vs GSTR-3B Reconciliation \u2014 Branch Wise</span>'
-      +'<span style="background:rgba(0,120,212,.22);border:1px solid rgba(0,120,212,.45);color:#62b6f7;font-size:11px;font-weight:600;padding:2px 9px;border-radius:2px">FY 2025-26</span>'
+      +'<span style="background:rgba(0,120,212,.22);border:1px solid rgba(0,120,212,.45);color:#62b6f7;font-size:11px;font-weight:600;padding:2px 9px;border-radius:2px">FY '+(APP.activeFY||'2025-26')+'</span>'
       +(any1A?'<span style="background:rgba(230,168,23,.25);border:1px solid rgba(230,168,23,.5);color:#e6a817;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px">&#9733; GSTR-1A amendments applied</span>':'')
       +'<select class="fsel" id="g1g3-cof">'+cOpts+'</select>'
       +'<select class="fsel" id="g1g3-brf">'+bOpts+'</select>'
@@ -7974,11 +8080,13 @@ function matchG2B(refNo) {
 /* ── Persist ──────────────────────────────────────────────────── */
 function saveG2BState() {
   try { localStorage.setItem(LS_G2B, JSON.stringify(APP.gstr2bData)); } catch(e){}
+  try { _lsSet(_fyK('gst_g2b'), APP.gstr2bData); } catch(e){}
   try { saveAppState(); } catch(e){}
 }
 function loadG2BState() {
   try {
-    var raw = localStorage.getItem(LS_G2B);
+    // FY-specific key first (with migration for FY 25-26), then legacy G2B key
+    var raw = _fyGet('gst_g2b') || localStorage.getItem(LS_G2B);
     if (raw) APP.gstr2bData = JSON.parse(raw);
   } catch(e){}
   rebuildGSTR2BRefSet();
