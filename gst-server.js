@@ -8440,10 +8440,15 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     m.bTax+=(r.taxable||0); m.bIg+=(r.igst||0); m.bCg+=(r.cgst||0); m.bSg+=(r.sgst||0);
   });
   (APP.gstr2bData||[]).forEach(function(d){
-    (d.invoiceList||[]).forEach(function(inv){
-      var m=getGrp(d.coKey,d.branch||'',d.month);
-      m.gTax+=(inv.txval||0); m.gIg+=(inv.igst||0); m.gCg+=(inv.cgst||0); m.gSg+=(inv.sgst||0);
-    });
+    if(!d.month) return;
+    // Use document-level totals (matches dashboard which uses d.igst/d.taxable).
+    // d.invoiceList only has B2B invoices — it EXCLUDES CDNR and other tables,
+    // which is why summing invoiceList gives a lower number than the dashboard.
+    var m=getGrp(d.coKey,d.branch||'',d.month);
+    m.gTax+=(d.taxable||d.totalTaxable||0);
+    m.gIg +=(d.igst||0);
+    m.gCg +=(d.cgst||0);
+    m.gSg +=(d.sgst||0);
   });
 
   /* ── Collect all branches per company ───────────────────────*/
