@@ -906,13 +906,15 @@ app.post('/api/sync/itc', async (req, res) => {
         g.billDate   = m.date || g.billDate;
         g.moveType   = m.move_type || '';
         g.isMisc     = (m.move_type === 'entry');
-        // Use signed taxable: amount_untaxed_signed is already negative for in_refund in Odoo.
-        // Fallback: negate manually when move_type is in_refund.
-        g.taxable    = (m.amount_untaxed_signed !== undefined && m.amount_untaxed_signed !== false)
-          ? m.amount_untaxed_signed
-          : (m.move_type === 'in_refund'
-              ? -Math.abs(m.amount_untaxed || 0)
-              :  Math.abs(m.amount_untaxed || 0));
+        // FIX: Do NOT use amount_untaxed_signed — Odoo returns it negative for in_invoice
+        // and positive for in_refund (opposite of what we need for display).
+        // Normalise: bills = +positive taxable, credit notes = -negative taxable, MISC = 0.
+        // MISC/ISD distribution entries have amount_untaxed = 0; taxable stays 0 here.
+        g.taxable    = (m.move_type === 'in_refund')
+          ? -Math.abs(m.amount_untaxed || 0)
+          : (m.move_type === 'in_invoice')
+              ?  Math.abs(m.amount_untaxed || 0)
+              :  0;   // 'entry' (MISC/ISD): taxable handled separately below
 
         // ── Skip GST liability set-off entries ──────────────────
         // These are MISC entries that offset ITC against GST payable.
@@ -970,15 +972,13 @@ app.post('/api/sync/itc', async (req, res) => {
       const mo    = parseInt(d.slice(5, 7), 10) - 1;
       const month = (!isNaN(yr) && !isNaN(mo) && mo >= 0 && mo <= 11)
         ? MONTH_SHORT[mo] + ' ' + yr : '';
-      // For MISC (entry) moves, amount_untaxed = 0; derive taxable from GST amounts
-      // (CGST+SGST = 2× effective; IGST alone — use proportional inverse for display)
-      const isRefund = g.moveType === 'in_refund';
-      // For MISC entries with no taxable, derive from GST amounts (preserving sign).
-      const taxable = g.isMisc && g.taxable === 0
-        ? round((Math.abs(g.cgst) + Math.abs(g.sgst)) > 0
-            ? (g.cgst + g.sgst) / 0.18        // assume 18% GST for approximation
-            : Math.abs(g.igst) > 0 ? g.igst / 0.18 : 0)
-        : round(g.taxable);
+      // FIX: For MISC/ISD distribution entries, amount_untaxed = 0 and we cannot reliably
+      // derive the taxable base because the effective GST rate may be 5%, 12%, 18%, or 28%.
+      // The old code used a hardcoded ÷0.18 which gave wrong values for non-18% invoices.
+      // Keep taxable = 0 for MISC entries; GST amounts are still correct from journal lines.
+      // For ISD credit-note distributions, GST amounts will already be negative (correct).
+      const taxable  = round(g.taxable);
+      const isRefund = (g.moveType === 'in_refund');
       return {
         moveId:     g.moveId,
         moveNo:     g.moveNo,
