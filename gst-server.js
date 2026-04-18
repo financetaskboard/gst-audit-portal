@@ -865,6 +865,7 @@ app.post('/api/sync/itc', async (req, res) => {
           vendorName:   '',
           isAdjustment: false,
           isMisc:       false,
+          moveType:     '',             // ← populated later from account.move read
           itcType:      acInfo.itcType || 'Normal',
           branch:       usePrefix ? brInfo.branch : defaultBranch,
           company:      usePrefix ? brInfo.company : acInfo.company,
@@ -878,9 +879,12 @@ app.post('/api/sync/itc', async (req, res) => {
         moveGroups[moveId].itcType = 'ISD';
       }
 
-      const amt = Math.abs(l.credit || 0) > Math.abs(l.debit || 0)
-        ? Math.abs(l.credit || 0)
-        : Math.abs(l.debit  || 0);
+      // Use signed balance: positive for purchase bills (ITC debited),
+      // negative for credit notes (ITC credited/reversed).
+      // balance = debit - credit in Odoo; fallback to computing it manually.
+      const amt = (l.balance !== undefined && l.balance !== false)
+        ? l.balance
+        : ((l.debit || 0) - (l.credit || 0));
       moveGroups[moveId][acInfo.taxType] += amt;
     });
 
@@ -891,7 +895,7 @@ app.post('/api/sync/itc', async (req, res) => {
       const batchIds = moveIds.slice(i, i + MOVE_BATCH);
       const moves = await odooCall(session, 'account.move', 'read',
         [batchIds],
-        { fields: ['id', 'name', 'ref', 'partner_id', 'date', 'amount_untaxed', 'move_type', 'narration'] }
+        { fields: ['id', 'name', 'ref', 'partner_id', 'date', 'amount_untaxed', 'amount_untaxed_signed', 'move_type', 'narration'] }
       );
       moves.forEach(m => {
         const g = moveGroups[m.id];
@@ -900,8 +904,15 @@ app.post('/api/sync/itc', async (req, res) => {
         g.refNo      = m.ref  || '';
         g.vendorName = m.partner_id ? m.partner_id[1] : '';
         g.billDate   = m.date || g.billDate;
-        g.taxable    = Math.abs(m.amount_untaxed || 0);
+        g.moveType   = m.move_type || '';
         g.isMisc     = (m.move_type === 'entry');
+        // Use signed taxable: amount_untaxed_signed is already negative for in_refund in Odoo.
+        // Fallback: negate manually when move_type is in_refund.
+        g.taxable    = (m.amount_untaxed_signed !== undefined && m.amount_untaxed_signed !== false)
+          ? m.amount_untaxed_signed
+          : (m.move_type === 'in_refund'
+              ? -Math.abs(m.amount_untaxed || 0)
+              :  Math.abs(m.amount_untaxed || 0));
 
         // ── Skip GST liability set-off entries ──────────────────
         // These are MISC entries that offset ITC against GST payable.
@@ -961,14 +972,17 @@ app.post('/api/sync/itc', async (req, res) => {
         ? MONTH_SHORT[mo] + ' ' + yr : '';
       // For MISC (entry) moves, amount_untaxed = 0; derive taxable from GST amounts
       // (CGST+SGST = 2× effective; IGST alone — use proportional inverse for display)
+      const isRefund = g.moveType === 'in_refund';
+      // For MISC entries with no taxable, derive from GST amounts (preserving sign).
       const taxable = g.isMisc && g.taxable === 0
-        ? round((g.cgst + g.sgst) > 0
+        ? round((Math.abs(g.cgst) + Math.abs(g.sgst)) > 0
             ? (g.cgst + g.sgst) / 0.18        // assume 18% GST for approximation
-            : g.igst > 0 ? g.igst / 0.18 : 0)
+            : Math.abs(g.igst) > 0 ? g.igst / 0.18 : 0)
         : round(g.taxable);
       return {
         moveId:     g.moveId,
         moveNo:     g.moveNo,
+        isRefund,                                // true for credit notes (in_refund)
         billDate:   g.billDate,
         month,
         refNo:      g.refNo,
