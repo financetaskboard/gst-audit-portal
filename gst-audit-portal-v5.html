@@ -794,23 +794,47 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
 
         <!-- Company GSTIN mapping -->
         <div class="tcard" style="margin-bottom:12px">
-          <div class="thdr"><span class="thdr-title">🏢 Company GSTIN Mapping</span><span class="thdr-sub">Map each company to its GSTIN — used to match uploaded JSON files</span></div>
+          <div class="thdr"><span class="thdr-title">🏢 Company GSTIN Mapping</span><span class="thdr-sub">Map each company+branch to its state-wise GSTIN — Ginni Systems has separate GSTINs per state</span></div>
           <div class="page-inner" style="padding:12px 16px">
-            <div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ginni Systems Ltd (state-wise GSTINs)</div>
+            <div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;margin-bottom:12px">
               <div class="fg">
-                <label class="flabel">Ginni Systems Ltd — GSTIN</label>
-                <input class="finput" id="gstin-gsl" placeholder="e.g. 29AACCS1234A1Z5" oninput="saveGSTINMap()"/>
+                <label class="flabel">Haryana (HO)</label>
+                <input class="finput" id="gstin-gsl" placeholder="06AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px"/>
               </div>
               <div class="fg">
-                <label class="flabel">Easemy Business Pvt Ltd — GSTIN</label>
+                <label class="flabel">Goa 🆕</label>
+                <input class="finput" id="gstin-gsl-goa" placeholder="30AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px;border-color:#e6a817"/>
+              </div>
+              <div class="fg">
+                <label class="flabel">Maharashtra</label>
+                <input class="finput" id="gstin-gsl-mh" placeholder="27AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px"/>
+              </div>
+              <div class="fg">
+                <label class="flabel">West Bengal</label>
+                <input class="finput" id="gstin-gsl-wb" placeholder="19AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px"/>
+              </div>
+              <div class="fg">
+                <label class="flabel">Karnataka</label>
+                <input class="finput" id="gstin-gsl-ka" placeholder="29AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px"/>
+              </div>
+              <div class="fg">
+                <label class="flabel">Telangana</label>
+                <input class="finput" id="gstin-gsl-tl" placeholder="36AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px"/>
+              </div>
+            </div>
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Other Companies</div>
+            <div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
+              <div class="fg">
+                <label class="flabel">Easemy Business Pvt Ltd</label>
                 <input class="finput" id="gstin-em" placeholder="e.g. 06AABCE1234B1Z3" oninput="saveGSTINMap()"/>
               </div>
               <div class="fg">
-                <label class="flabel">Browntape Infrosolution Pvt Ltd — GSTIN</label>
+                <label class="flabel">Browntape Infrosolution Pvt Ltd</label>
                 <input class="finput" id="gstin-bt" placeholder="e.g. 30AABCB1234C1Z1" oninput="saveGSTINMap()"/>
               </div>
               <div class="fg">
-                <label class="flabel">Roxfortech Infosolutions Pvt Ltd — GSTIN</label>
+                <label class="flabel">Roxfortech Infosolutions Pvt Ltd</label>
                 <input class="finput" id="gstin-roxfo" placeholder="e.g. 06AABCR1234A1Z5" oninput="saveGSTINMap()"/>
               </div>
             </div>
@@ -974,14 +998,20 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
             <div id="g1a-preview-content" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px"></div>
           </div>
 
-          <div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-top:10px">
+          <div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;margin-top:10px">
             <div class="fg">
               <label class="flabel">Company</label>
-              <select class="finput" id="g1a-company">
+              <select class="finput" id="g1a-company" onchange="updateG1ABranchList()">
                 <option value="gsl">Ginni Systems Ltd</option>
                 <option value="em">Easemy Business Pvt Ltd</option>
                 <option value="bt">Browntape Infrosolution Pvt Ltd</option>
                 <option value="roxfo">Roxfortech Infosolutions Pvt Ltd</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="flabel">Branch / State</label>
+              <select class="finput" id="g1a-branch">
+                <option value="">— All Branches (Company-level) —</option>
               </select>
             </div>
             <div class="fg">
@@ -1208,7 +1238,7 @@ const APP = {
   isdData: [],            // ISD (GSTR-6) JSON imports — Input Service Distributor
   purchaseData: [],       // Odoo purchase/vendor bills (input side)
   itcData: [],            // ITC Books — from Odoo ITC receivable accounts (account-wise sync)
-  gstinMap: { gsl:'', em:'', bt:'', roxfo:'' },
+  gstinMap: { gsl:'', em:'', bt:'', roxfo:'', 'gsl-goa':'', 'gsl-mh':'', 'gsl-wb':'', 'gsl-ka':'', 'gsl-tl':'' },
   forexOverrides: {},     // { invoice_no: { taxable, cgst, sgst, igst, currency, rate, note } }
   odooConfig: {
     url: 'https://ginesys.odoo.com',
@@ -1228,38 +1258,62 @@ function fINR(n){
 function pINR(n){const a=Math.abs(n),s=a>=10000000?(a/10000000).toFixed(4)+'Cr':a>=100000?(a/100000).toFixed(2)+'L':a>=1000?(a/1000).toFixed(1)+'K':a.toLocaleString('en-IN');return(n<0?'-':'')+'₹'+s;}
 
 // ── DUAL DASHBOARD SWITCHER ───────────────────────────────────
-// ── INVOICE SERIES → COMPANY KEY MAP ──────────────────────────
-// Maps invoice / credit-note number prefixes to the correct company key.
-// Takes PRIORITY over the company name from Odoo — add a series here
-// when Odoo has the wrong company on a document.
-// Keys: gsl | em | bt | roxfo
+// ── INVOICE SERIES → COMPANY KEY MAP ─────────────────────────────
+// Maps invoice/CN prefix (lowercase) to the correct company key.
+// Takes PRIORITY over Odoo's company field.
 var SERIES_MAP = {
-  'rbhr' : 'gsl',    // Ginni Systems Ltd — Haryana branch debit/credit note series
-  'bgo'  : 'gsl',    // Ginni Systems Ltd — Goa branch
-  'cnrx' : 'roxfo',  // Roxfortech — Haryana
-  'srx'  : 'roxfo',  // Roxfortech — other state branch
-  'bilro': 'roxfo',  // Roxfortech — Bilaspur branch
-  // Add more as needed: 'PREFIX_LOWERCASE': 'company_key'
+  'rbhr'  : 'gsl',   // Ginni Systems — Haryana debit/credit notes
+  'bgo'   : 'gsl',   // Ginni Systems — Goa branch purchase bills
+  'rbtbil': 'bt',    // Browntape — Goa branch purchase bills
+  'cnrx'  : 'roxfo', // Roxfortech — Haryana
+  'srx'   : 'roxfo', // Roxfortech — other state
+  'bilro' : 'roxfo', // Roxfortech — Bilaspur
 };
 
-// ── Popup helper: open HTML in new tab, with blob fallback if popup blocked ──
-function openPopupHTML(html, filename) {
-  var w = window.open('', '_blank');
-  if (w) { w.document.write(html); w.document.close(); return; }
-  // Popup blocked — use Blob URL fallback
-  try {
-    var blob = new Blob([html], {type:'text/html'});
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href=url; a.target='_blank'; a.rel='noopener'; a.click();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
-  } catch(e) {
-    toast('⚠️ Popup blocked — allow popups for this page', '⚠️');
-  }
-}
+// ── RAW PREFIX → CANONICAL BRANCH NAME ────────────────────────
+// Handles cases where Odoo stores the prefix itself as branch label.
+var PREFIX_BRANCH_MAP = {
+  'bgo'   : 'Goa',
+  'rbtbil': 'Goa',
+  'rbhr'  : 'Haryana',
+  'cnrx'  : 'Haryana',
+  'srx'   : 'Haryana',
+  'bilro' : 'Haryana',
+  'bhr'   : 'Haryana',   'dhr': 'Haryana',   'bill': 'Haryana',
+  'bwb'   : 'West Bengal','dwb': 'West Bengal',
+  'bmh'   : 'Maharashtra','dmh': 'Maharashtra',
+  'bkn'   : 'Karnataka', 'dkn': 'Karnataka',
+  'btl'   : 'Telangana', 'dtl': 'Telangana',
+  'btbil' : 'Goa',       'misbt': 'Goa',
+  'bille' : 'Haryana',
+};
 
+// ── RAW BRANCH LABEL → CANONICAL BRANCH NAME ──────────────────
+// Normalises known bad/abbreviated branch labels in cached data.
+var BRANCH_NORMALIZE_MAP = {
+  'BGO'   : 'Goa',
+  'RBTBIL': 'Goa',
+  'BTBIL' : 'Goa',
+  'MISBT' : 'Goa',
+  'RBHR'  : 'Haryana',
+  'BHR'   : 'Haryana',
+  'DHR'   : 'Haryana',
+  'BILL'  : 'Haryana',
+  'BWB'   : 'West Bengal',
+  'DWB'   : 'West Bengal',
+  'BMH'   : 'Maharashtra',
+  'DMH'   : 'Maharashtra',
+  'BKN'   : 'Karnataka',
+  'DKN'   : 'Karnataka',
+  'BTL'   : 'Telangana',
+  'DTL'   : 'Telangana',
+  'BILLE' : 'Haryana',
+  'BILRO' : 'Haryana',
+  'CNRX'  : 'Haryana',
+  'SRX'   : 'Haryana',
+};
 
-// ── Company display names for SERIES_MAP overrides ─────────────
+// ── Company display names ─────────────────────────────────────
 var CO_NAMES_MAP = {
   gsl:   'Ginni Systems Ltd',
   em:    'Easemy Business Pvt Ltd',
@@ -1267,20 +1321,89 @@ var CO_NAMES_MAP = {
   roxfo: 'Roxfortech Infosolutions Pvt Ltd'
 };
 
-// ── Apply SERIES_MAP to ITC / credit-note records ──────────────
-// Call this after every sync and after loading from localStorage.
+// ── Popup helper: open HTML in new tab, preserving window.opener ──
+// IMPORTANT: Always try window.open('','_blank') first because:
+// (a) it preserves window.opener so child popups can call back
+// (b) blob:// URLs break window.opener chain
+// Only use blob as absolute last resort.
+function openPopupHTML(html, filename) {
+  // First attempt: write into a blank new tab (opener preserved)
+  var w = null;
+  try { w = window.open('', '_blank'); } catch(e) {}
+  if (w && !w.closed) {
+    try { w.document.write(html); w.document.close(); return w; } catch(e) { try{w.close();}catch(x){} }
+  }
+  // Second attempt: open via data-URI anchor click
+  try {
+    var blob = new Blob([html], {type:'text/html'});
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href=url; a.target='_blank'; a.rel='noopener'; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
+    // Note: opener won't work with blob URLs — show user notice
+    setTimeout(function(){
+      toast('📋 Opened in new tab. If Invoice Wise buttons don\'t work, allow popups for this site.','ℹ️');
+    }, 500);
+  } catch(e) { toast('Popup blocked — please allow popups for this site','⚠️'); }
+  return null;
+}
+
+// ── Apply all corrections to ITC records ─────────────────────
+// Fixes coKey, company, AND branch. Run after every sync + localStorage load.
 function applySeriesMapToITC(arr) {
   if (!arr || !arr.length) return arr || [];
   return arr.map(function(r) {
-    // Use journal entry number (moveNo) as the series source
     var prefix = ((r.moveNo || r.invoice_no || r.entryNo || '')).split('/')[0].toLowerCase().trim();
-    if (prefix && SERIES_MAP[prefix] && SERIES_MAP[prefix] !== r.coKey) {
-      var corrected = Object.assign({}, r);
-      corrected.coKey   = SERIES_MAP[prefix];
-      corrected.company = CO_NAMES_MAP[SERIES_MAP[prefix]] || r.company;
-      return corrected;
+    var c = Object.assign({}, r);
+
+    // 1. Fix coKey + company from SERIES_MAP (invoice prefix)
+    if (prefix && SERIES_MAP[prefix]) {
+      c.coKey   = SERIES_MAP[prefix];
+      c.company = CO_NAMES_MAP[SERIES_MAP[prefix]] || r.company;
     }
-    return r;
+    // Also catch coKey='other' entries whose company name reveals the real company
+    if (!c.coKey || c.coKey === 'other') {
+      var cn = (c.company||'').toLowerCase();
+      if      (cn.indexOf('ginni')>-1)      { c.coKey='gsl';   c.company=CO_NAMES_MAP.gsl;   }
+      else if (cn.indexOf('browntape')>-1)  { c.coKey='bt';    c.company=CO_NAMES_MAP.bt;    }
+      else if (cn.indexOf('easemy')>-1)     { c.coKey='em';    c.company=CO_NAMES_MAP.em;    }
+      else if (cn.indexOf('roxfortech')>-1) { c.coKey='roxfo'; c.company=CO_NAMES_MAP.roxfo; }
+    }
+
+    // 2. Fix branch from invoice prefix (highest priority)
+    if (prefix && PREFIX_BRANCH_MAP[prefix]) {
+      c.branch = PREFIX_BRANCH_MAP[prefix];
+    }
+    // 3. Normalise known bad branch label values (from old cached data)
+    else if (c.branch && BRANCH_NORMALIZE_MAP[c.branch]) {
+      c.branch = BRANCH_NORMALIZE_MAP[c.branch];
+    }
+
+    // 4. MISC entries → correct branch per company
+    // isMisc flag set by server; also catch entries whose moveNo prefix is MISC-style
+    var isMiscLike = c.isMisc
+      || (prefix && ['misc','adj','adjustment','jnl','journal'].indexOf(prefix) >= 0);
+    if (isMiscLike) {
+      if (c.coKey === 'gsl') c.branch = 'Haryana';   // Ginni Systems MISC → Haryana (HO)
+      if (c.coKey === 'em')  c.branch = 'Haryana';   // Easemy Business MISC → Haryana
+      // bt MISC handled by BTBIL/MISBT maps already → Goa; no override needed
+    }
+
+    // 4b. RBTBIL prefix entries → force Goa for Browntape
+    // (catch old cached data where branch was stored as 'RBTBIL' or 'Unknown')
+    if (c.coKey === 'bt' && (!c.branch || c.branch === 'Unknown' || c.branch === 'RBTBIL')) {
+      c.branch = 'Goa';
+    }
+
+    // 5. Final fallback: Unknown/empty branch → sensible default per company
+    if (!c.branch || c.branch === 'Unknown' || c.branch === c.moveNo) {
+      if      (c.coKey === 'gsl')   c.branch = 'Haryana';
+      else if (c.coKey === 'em')    c.branch = 'Haryana';
+      else if (c.coKey === 'bt')    c.branch = 'Goa';
+      else if (c.coKey === 'roxfo') c.branch = 'Haryana';
+    }
+
+    return c;
   });
 }
 
@@ -2033,6 +2156,35 @@ const COMPANY_MATCH = {
 // Expose for branch list builder
 window.COMPANY_MATCH_REF = COMPANY_MATCH;
 
+// ── MASTER BRANCH LIST PER COMPANY ───────────────────────────
+// Always-available branches regardless of whether Odoo data has been synced.
+// Merge with dynamically discovered branches from Odoo data.
+// Add new branches here when a company opens in a new state.
+window.MASTER_BRANCHES = {
+  gsl:   ['Goa','Haryana','Karnataka','Maharashtra','Telangana','West Bengal'],
+  em:    ['Haryana'],
+  bt:    ['Goa'],
+  roxfo: ['Haryana'],
+};
+
+// Returns merged branch list (master + dynamic from data) for a company key
+window.getBranchesForCompany = function(coKey, extraData) {
+  var master = (window.MASTER_BRANCHES[coKey] || []).slice();
+  var seen   = {};
+  master.forEach(function(b){ seen[b]=1; });
+  var allData = (APP.salesData||[]).concat(APP.creditData||[])
+                 .concat(APP.rcmData||[]).concat(APP.itcData||[])
+                 .concat(extraData||[]);
+  allData.forEach(function(r){
+    var ck = r.coKey || '';
+    var co = (r.company||'').toLowerCase();
+    var kw = (window.COMPANY_MATCH_REF[coKey]||[]);
+    var match = ck===coKey || kw.some(function(k){ return co.indexOf(k)>=0; });
+    if (match && r.branch && !seen[r.branch]) { seen[r.branch]=1; master.push(r.branch); }
+  });
+  return master.sort();
+};
+
 let salesActiveTab   = 'all';
 let creditActiveTab  = 'all';
 
@@ -2212,9 +2364,9 @@ function buildReconG1Books() {
 
   // Detect companies from data
   var COMPANIES = [
-    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni']               },
+    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni','bgo']               },
     { name:'Easemy Business Pvt Ltd',              key:'em',     match:['easemy','sem']         },
-    { name:'Browntape Infrosolution Pvt Ltd',      key:'bt',     match:['browntape']            },
+    { name:'Browntape Infrosolution Pvt Ltd',      key:'bt',     match:['browntape','rbtbil']    },
     { name:'Roxfortech Infosolutions Pvt Ltd',     key:'roxfo',  match:['roxfortech','roxfo','bilro','cnrx','srx'] }
   ];
   function getCompanyKey(r) {
@@ -2609,7 +2761,7 @@ function showPage(id){
   // Refresh GSTR-1 pages when navigated to
   if(id==='gstr1-upload'){loadGSTINMap();renderGSTR1History();updateG1BranchList();}
   if(id==='gstr1-view'){renderGSTR1View();}
-  if(id==='gstr1a-upload'){loadGSTINMap();renderGSTR1AHistory();updateG1ABadge();}
+  if(id==='gstr1a-upload'){loadGSTINMap();renderGSTR1AHistory();updateG1ABadge();updateG1ABranchList();}
   if(id==='gstr1a-view'){renderGSTR1AView();}
   if(id==='gstr3b-upload'){if(typeof updateG3BBranchList==='function')updateG3BBranchList();if(typeof renderGSTR3BHistory==='function')renderGSTR3BHistory();}
   if(id==='gstr3b-view' && typeof renderGSTR3BView==='function'){renderGSTR3BView();}
@@ -2639,16 +2791,27 @@ function toast(msg,icon='✅'){const t=document.getElementById('toast');document
 
 // ── GSTIN MAP ─────────────────────────────────────────────────
 function saveGSTINMap(){
-  APP.gstinMap.gsl   = (document.getElementById('gstin-gsl')  ||{value:''}).value.trim().toUpperCase();
-  APP.gstinMap.em    = (document.getElementById('gstin-em')   ||{value:''}).value.trim().toUpperCase();
-  APP.gstinMap.bt    = (document.getElementById('gstin-bt')   ||{value:''}).value.trim().toUpperCase();
-  APP.gstinMap.roxfo = (document.getElementById('gstin-roxfo')||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap.gsl   = (document.getElementById('gstin-gsl')    ||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap.em    = (document.getElementById('gstin-em')     ||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap.bt    = (document.getElementById('gstin-bt')     ||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap.roxfo = (document.getElementById('gstin-roxfo')  ||{value:''}).value.trim().toUpperCase();
+  // Branch-specific GSTINs for Ginni Systems (one GSTIN per state)
+  APP.gstinMap['gsl-goa'] = (document.getElementById('gstin-gsl-goa')||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap['gsl-mh']  = (document.getElementById('gstin-gsl-mh') ||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap['gsl-wb']  = (document.getElementById('gstin-gsl-wb') ||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap['gsl-ka']  = (document.getElementById('gstin-gsl-ka') ||{value:''}).value.trim().toUpperCase();
+  APP.gstinMap['gsl-tl']  = (document.getElementById('gstin-gsl-tl') ||{value:''}).value.trim().toUpperCase();
 }
 function loadGSTINMap(){
-  if(document.getElementById('gstin-gsl'))   document.getElementById('gstin-gsl').value   = APP.gstinMap.gsl||'';
-  if(document.getElementById('gstin-em'))    document.getElementById('gstin-em').value    = APP.gstinMap.em||'';
-  if(document.getElementById('gstin-bt'))    document.getElementById('gstin-bt').value    = APP.gstinMap.bt||'';
-  if(document.getElementById('gstin-roxfo')) document.getElementById('gstin-roxfo').value = APP.gstinMap.roxfo||'';
+  if(document.getElementById('gstin-gsl'))    document.getElementById('gstin-gsl').value    = APP.gstinMap.gsl||'';
+  if(document.getElementById('gstin-em'))     document.getElementById('gstin-em').value     = APP.gstinMap.em||'';
+  if(document.getElementById('gstin-bt'))     document.getElementById('gstin-bt').value     = APP.gstinMap.bt||'';
+  if(document.getElementById('gstin-roxfo'))  document.getElementById('gstin-roxfo').value  = APP.gstinMap.roxfo||'';
+  if(document.getElementById('gstin-gsl-goa'))document.getElementById('gstin-gsl-goa').value= APP.gstinMap['gsl-goa']||'';
+  if(document.getElementById('gstin-gsl-mh')) document.getElementById('gstin-gsl-mh').value = APP.gstinMap['gsl-mh']||'';
+  if(document.getElementById('gstin-gsl-wb')) document.getElementById('gstin-gsl-wb').value = APP.gstinMap['gsl-wb']||'';
+  if(document.getElementById('gstin-gsl-ka')) document.getElementById('gstin-gsl-ka').value = APP.gstinMap['gsl-ka']||'';
+  if(document.getElementById('gstin-gsl-tl')) document.getElementById('gstin-gsl-tl').value = APP.gstinMap['gsl-tl']||'';
 }
 
 // ── GSTR-1 JSON IMPORT ────────────────────────────────────────
@@ -2715,7 +2878,7 @@ function importGSTR1JSON(){
   const fy      = document.getElementById('g1-fy').value;
   const coNames = {gsl:'Ginni Systems Ltd', em:'Easemy Business Pvt Ltd', bt:'Browntape Infrosolution Pvt Ltd', roxfo:'Roxfortech Infosolutions Pvt Ltd'};
   const coName  = coNames[coKey] || coKey;
-  const gstin   = APP.gstinMap[coKey]||'';
+  const gstin   = getGSTINForBranch(coKey, branch || 'Haryana');
   // *** KEY FIX: store month as "Apr 2025" to match Odoo's r.month format ***
   const month   = monthSh + ' ' + year;   // e.g. "Apr 2025"
   const period  = month;                   // same thing — used for display
@@ -3273,7 +3436,7 @@ async function importGSTR1APDF(){
     const coKey   = document.getElementById('g1a-company').value;
     const coNames = {gsl:'Ginni Systems Ltd',em:'Easemy Business Pvt Ltd',bt:'Browntape Infrosolution Pvt Ltd',roxfo:'Roxfortech Infosolutions Pvt Ltd'};
     const coName  = coNames[coKey]||coKey;
-    const gstin   = parsed.gstin || (APP.gstinMap&&APP.gstinMap[coKey])||'';
+    const gstin   = parsed.gstin || getGSTINForBranch(coKey, parsed.periodMonth||'') || '';
     const fy      = parsed.fy || document.getElementById('g1a-fy').value;
 
     const monthSh = parsed.monthSh || document.getElementById('g1a-month').value;
@@ -3605,24 +3768,41 @@ function updateG1BranchList(){
   const coKey = (document.getElementById('g1-company')||{value:'gsl'}).value;
   const sel   = document.getElementById('g1-branch');
   if (!sel) return;
-  const keywords = (window.COMPANY_MATCH_REF||{})[coKey] || [coKey];
-  const allData  = [...APP.salesData, ...APP.creditData, ...(APP.rcmData||[])];
-  const branches = [...new Set(
-    allData
-      .filter(r => {
-        const co  = (r.company||'').toLowerCase();
-        const inv = (r.invoice_no||r.cn_no||r.entryNo||'').split('/')[0].toLowerCase();
-        const ck  = r.coKey||'';
-        return keywords.some(k => co.includes(k) || inv === k) || ck === coKey;
-      })
-      .map(r => r.branch)
-      .filter(Boolean)
-  )].sort();
+  const branches = window.getBranchesForCompany
+    ? window.getBranchesForCompany(coKey)
+    : [];
   sel.innerHTML = '<option value="">— All Branches (Company-level) —</option>'
     + branches.map(b => `<option value="${b}">${b}</option>`).join('');
 }
 
-// ── LOCAL STORAGE PERSISTENCE ─────────────────────────────────
+function updateG1ABranchList(){
+  const coKey = (document.getElementById('g1a-company')||{value:'gsl'}).value;
+  const sel   = document.getElementById('g1a-branch');
+  if (!sel) return;
+  const branches = window.getBranchesForCompany
+    ? window.getBranchesForCompany(coKey)
+    : [];
+  sel.innerHTML = '<option value="">— All Branches (Company-level) —</option>'
+    + branches.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+// ── Get the correct GSTIN for a company + branch ──────────────
+// Ginni Systems has one GSTIN per state; others have one company-wide GSTIN.
+function getGSTINForBranch(coKey, branch) {
+  if (coKey === 'gsl') {
+    var brMap = {
+      'Haryana'     : APP.gstinMap['gsl']       || '',
+      'Goa'         : APP.gstinMap['gsl-goa']   || '',
+      'Maharashtra' : APP.gstinMap['gsl-mh']    || '',
+      'West Bengal' : APP.gstinMap['gsl-wb']    || '',
+      'Karnataka'   : APP.gstinMap['gsl-ka']    || '',
+      'Telangana'   : APP.gstinMap['gsl-tl']    || '',
+    };
+    // Return branch-specific GSTIN if known, else fall back to Haryana (HO)
+    return (branch && brMap[branch]) ? brMap[branch] : (APP.gstinMap['gsl'] || '');
+  }
+  return APP.gstinMap[coKey] || '';
+}
 // One key per data type to stay well under 5MB quota.
 // Old keys are cleared before writing to free space.
 const LS_KEY = 'gst_audit_portal_v1'; // kept only for migration reads
@@ -3685,7 +3865,7 @@ function loadAppState(){
     var cfg = localStorage.getItem('gst_cfg');
     if (cfg) {
       var c = JSON.parse(cfg);
-      APP.gstinMap       = c.gstinMap       || { gsl:'', em:'', bt:'', roxfo:'' };
+      APP.gstinMap = Object.assign({ gsl:'', em:'', bt:'', roxfo:'', 'gsl-goa':'', 'gsl-mh':'', 'gsl-wb':'', 'gsl-ka':'', 'gsl-tl':'' }, c.gstinMap || {});
       APP.lastSync       = c.lastSync       || { sales:null, credit:null };
       APP.forexOverrides = c.forexOverrides || {};
       if (c.odooConfig) APP.odooConfig = Object.assign({}, APP.odooConfig, c.odooConfig);
@@ -4231,9 +4411,9 @@ function updateDashCoRecon() {
   }
 
   var COMPANIES = [
-    { key:'gsl',   frags:['ginni'],             label:'Ginni Systems Limited'                   },
-    { key:'em',    frags:['easemy','sem'],       label:'Easemy Business Private Limited'         },
-    { key:'bt',    frags:['browntape'],          label:'Browntape Technologies Private Limited'  },
+    { key:'gsl',   frags:['ginni','bgo'],                     label:'Ginni Systems Limited'                   },
+    { key:'em',    frags:['easemy','sem'],                     label:'Easemy Business Private Limited'         },
+    { key:'bt',    frags:['browntape','rbtbil'],               label:'Browntape Technologies Private Limited'  },
     { key:'roxfo', frags:['roxfortech','roxfo','bilro','cnrx','srx'], label:'Roxfortech Infosolutions Private Limited' }
   ];
 
@@ -5168,7 +5348,7 @@ async function importGSTR3BPDF() {
     const coNames = { gsl:'Ginni Systems Ltd', em:'Easemy Business Pvt Ltd', bt:'Browntape Technologies Private Limited', roxfo:'Roxfortech Infosolutions Pvt Ltd' };
     const coName  = coNames[coKey] || coKey;
     const fy      = document.getElementById('g3b-fy').value;
-    const gstin   = parsed.gstin || (APP.gstinMap && APP.gstinMap[coKey]) || '';
+    const gstin   = parsed.gstin || getGSTINForBranch(coKey, document.getElementById('g3b-branch') ? document.getElementById('g3b-branch').value : '') || '';
 
     // Use auto-detected month, or fallback to user-selected
     let monthKey = parsed.monthKey;
@@ -5960,7 +6140,7 @@ loadGstr3bState();
               '<div class="upload-ok" id="g2b-upload-ok" style="display:none">&#9989; File loaded: <strong id="g2b-fname"></strong></div>' +
               '<div class="sync-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;margin-top:10px">' +
                 '<div class="fg"><label class="flabel">Company</label>' +
-                  '<select class="finput" id="g2b-company">' +
+                  '<select class="finput" id="g2b-company" onchange="window.updateG2BBranchList&&window.updateG2BBranchList()">' +
                     '<option value="gsl">Ginni Systems Ltd</option>' +
                     '<option value="em">Easemy Business Pvt Ltd</option>' +
                     '<option value="bt">Browntape Infrosolution Pvt Ltd</option>' +
@@ -6284,7 +6464,7 @@ loadGstr3bState();
     }
 
     var gstinM = t.match(/\b([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z])\b/);
-    var pdfGSTIN = gstinM ? gstinM[1] : (APP.gstinMap[coKey] || '');
+    var pdfGSTIN = gstinM ? gstinM[1] : (getGSTINForBranch(coKey, (document.getElementById('g2b-branch')||{value:''}).value) || '');
 
     var a   = numsAfter(/\(a\)\s*Outward taxable supplies\s*\(other than zero/i,   5);
     var b   = numsAfter(/\(b\)\s*Outward taxable supplies\s*\(zero rated\)/i,       5);
@@ -6497,24 +6677,12 @@ loadGstr3bState();
     a.click();
   };
 
-  /* ── Branch list helper for GSTR-3B upload (mirrors updateG1BranchList) ── */
+  /* ── Branch list helper for GSTR-3B upload ── */
   window.updateG3BBranchList = function() {
     var co  = (document.getElementById('g3b-company')||{value:'gsl'}).value;
     var sel = document.getElementById('g3b-branch');
     if (!sel) return;
-    var keywords = (window.COMPANY_MATCH_REF||{})[co] || [co];
-    var allData  = (APP.salesData||[]).concat(APP.creditData||[]).concat(APP.rcmData||[]);
-    var branches = [];
-    var seen = {};
-    allData.forEach(function(r){
-      var c   = (r.company||'').toLowerCase();
-      var inv = (r.invoice_no||r.cn_no||r.entryNo||'').split('/')[0].toLowerCase();
-      var ck  = r.coKey||'';
-      if (keywords.some(function(k){ return c.indexOf(k)>=0 || inv===k; }) || ck===co) {
-        if (r.branch && !seen[r.branch]) { seen[r.branch]=1; branches.push(r.branch); }
-      }
-    });
-    branches.sort();
+    var branches = window.getBranchesForCompany ? window.getBranchesForCompany(co) : [];
     sel.innerHTML = '<option value="">&#8212; All Branches (Company-level) &#8212;</option>'
       + branches.map(function(b){ return '<option value="'+b+'">'+b+'</option>'; }).join('');
   };
@@ -6541,10 +6709,18 @@ loadGstr3bState();
   }
 
   window.updateG2BBranchList = function(keepValue) {
+    var co  = (document.getElementById('g2b-company')||{value:'gsl'}).value;
     var sel = document.getElementById('g2b-branch');
     if (!sel) return;
     var current = keepValue !== undefined ? keepValue : sel.value;
-    sel.innerHTML = buildG2BBranchOptions(current);
+    // Use company-specific branches from MASTER_BRANCHES merged with dynamic data
+    var branches = window.getBranchesForCompany
+      ? window.getBranchesForCompany(co, (APP.gstr2bData||[]))
+      : G2B_STATES_ORDERED;
+    sel.innerHTML = '<option value="">\u2014 All Branches (Company-level) \u2014</option>'
+      + branches.map(function(s){
+          return '<option value="'+s+'"'+(s===current?' selected':'')+'>'+s+'</option>';
+        }).join('');
   };
 
   // Initialise the branch dropdown immediately on page load
@@ -8226,9 +8402,12 @@ window.openG2BRecon = function(initCoKey, initMonth) {
     return matches.length >= Math.min(1, Math.floor(Math.min(wa.length,wb.length)*0.5));
   }
 
+  /* ── Defensively normalize ITC data (handles stale localStorage) ── */
+  var itcNorm = applySeriesMapToITC(APP.itcData || []);
+
   /* ── Build itcData index by normalised refNo ─────────────── */
   var booksIdx = {};
-  (APP.itcData||[]).forEach(function(r){
+  itcNorm.forEach(function(r){
     var k = norm(r.refNo);
     if (k) booksIdx[k] = booksIdx[k] || [];
     if (k) booksIdx[k].push(r);
@@ -8310,7 +8489,7 @@ window.openG2BRecon = function(initCoKey, initMonth) {
         +'<td style="padding:7px 10px;text-align:right">'+dc(dSg)+'</td>'
         +'<td style="padding:7px 10px;text-align:center">'
         +'<button onclick="showInvDetail(\''+coKey+'\',\''+encodeURIComponent(branch||'')+'\',\''+encodeURIComponent(mo)+'\')" '
-        +'style="background:#0078d4;color:#fff;border:none;border-radius:3px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Invoice Wise ↗</button>'
+        +'style="background:#0078d4;color:#fff;border:none;border-radius:3px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Invoice Wise \u2197</button>'
         +'</td>'
         +'</tr>';
     }).join('');
@@ -8362,131 +8541,208 @@ window.openG2BRecon = function(initCoKey, initMonth) {
   });
   if(!bodyHTML) bodyHTML='<div style="text-align:center;padding:40px;color:#605e5c">No data — sync ITC from Odoo and import GSTR-2B JSON.</div>';
 
-  /* ── Invoice-wise detail function (injected into popup) ──── */
-  var invDetailFn = (function buildInvDetailFnStr(){
-    // Serialise necessary data into the popup
-    var itcSer = JSON.stringify((APP.itcData||[]).map(function(r){
-      return {moveNo:r.moveNo,billDate:r.billDate,refNo:r.refNo,vendorName:r.vendorName,
-              taxable:r.taxable,igst:r.igst,cgst:r.cgst,sgst:r.sgst,
-              coKey:r.coKey,branch:r.branch,month:r.month,isMisc:r.isMisc};
-    }));
-    var g2bSer = JSON.stringify((APP.gstr2bData||[]).map(function(d){
-      return {coKey:d.coKey,branch:d.branch||'',month:d.month,invoiceList:(d.invoiceList||[]).map(function(inv){
-        return {inum:inv.inum,inumNorm:inv.inumNorm,dt:inv.dt,supplierName:inv.supplierName,
-                supplierGSTIN:inv.supplierGSTIN,txval:inv.txval,igst:inv.igst,cgst:inv.cgst,sgst:inv.sgst,source:inv.source};
-      })};
-    }));
+  /* ── Invoice-wise detail function ─────────────────────────── */
+  // Serialise data for injection into popup window
+  var _itcData = (APP.itcData||[]).map(function(r){
+    return {moveNo:r.moveNo,billDate:r.billDate,refNo:r.refNo,vendorName:r.vendorName,
+            taxable:r.taxable,igst:r.igst,cgst:r.cgst,sgst:r.sgst,
+            coKey:r.coKey,branch:r.branch||'',month:r.month,isMisc:!!r.isMisc};
+  });
+  var _g2bData = (APP.gstr2bData||[]).map(function(d){
+    return {coKey:d.coKey,branch:d.branch||'',month:d.month,
+            invoiceList:(d.invoiceList||[]).map(function(inv){
+              return {inum:inv.inum,inumNorm:inv.inumNorm||'',dt:inv.dt||'',
+                      supplierName:inv.supplierName||'',supplierGSTIN:inv.supplierGSTIN||'',
+                      txval:inv.txval||0,igst:inv.igst||0,cgst:inv.cgst||0,sgst:inv.sgst||0,source:inv.source||''};
+            })};
+  });
 
-    return 'var _itc='+itcSer+';var _g2b='+g2bSer+';'
-    +'function norm(s){return (s||"").toString().trim().toUpperCase().replace(/[\\s\\-\\/\\\\.,]+/g,"");}'
-    +'function normName(s){return (s||"").toString().toLowerCase().replace(/[^a-z0-9]/g," ").replace(/\\s+/g," ").trim();}'
-    +'function nameSim(a,b){'
-    +'  var wa=normName(a).split(" ").filter(function(x){return x.length>2;});'
-    +'  var wb=normName(b).split(" ").filter(function(x){return x.length>2;});'
-    +'  if(!wa.length||!wb.length) return false;'
-    +'  var m=wa.filter(function(w){return wb.some(function(x){return x.indexOf(w)>=0||w.indexOf(x)>=0;});});'
-    +'  return m.length>=Math.min(1,Math.floor(Math.min(wa.length,wb.length)*0.5));'
-    +'}'
-    +'function fv(v){'
-    +'  if(!v&&v!==0)return "—";var a=Math.abs(v),neg=v<0;'
-    +'  var s=a>=10000000?(a/10000000).toFixed(2)+"Cr":a>=100000?(a/100000).toFixed(2)+"L":a>=1000?(a/1000).toFixed(1)+"K":Math.round(a).toLocaleString("en-IN");'
-    +'  return (neg?"-":"")+"₹"+s;'
-    +'}'
-    +'window.showInvDetail=function(coKey,brEnc,moEnc){'
-    +'  var br=decodeURIComponent(brEnc), mo=decodeURIComponent(moEnc);'
-    +'  var books=_itc.filter(function(r){return r.coKey===coKey&&(r.branch||"")===br&&r.month===mo;});'
-    +'  var g2bInvs=[];'
-    +'  _g2b.forEach(function(d){'
-    +'    if(d.coKey!==coKey||(d.branch||"")!==br||d.month!==mo)return;'
-    +'    (d.invoiceList||[]).forEach(function(inv){g2bInvs.push(inv);});'
-    +'  });'
-    // Build index: refNo → GSTR-2B invoice  (match only if BOTH invoice number AND party name match)
-    +'  var g2bByRef={};'
-    +'  g2bInvs.forEach(function(inv){'
-    +'    var k=inv.inumNorm||norm(inv.inum);'
-    +'    if(k) g2bByRef[k]=inv;'
-    +'  });'
-    +'  var seenG2B={};'
-    +'  var rows=[];'
+  // The showInvDetail function is defined directly in the popup via a Blob
+  window._openInvDetail = function(coKey, branch, month) {
+    var books = _itcData.filter(function(r){ return r.coKey===coKey && r.branch===branch && r.month===month; });
+    var g2bInvs = [];
+    _g2bData.forEach(function(d){
+      if(d.coKey!==coKey || d.branch!==branch || d.month!==month) return;
+      (d.invoiceList||[]).forEach(function(inv){ g2bInvs.push(inv); });
+    });
+
+    function normRef(s){ return (s||'').toString().trim().toUpperCase().replace(/[\s\-\/\\.,]+/g,''); }
+    function normName(s){ return (s||'').toString().toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim(); }
+    function nameSim(a,b){
+      var wa=normName(a).split(' ').filter(function(w){return w.length>2;});
+      var wb=normName(b).split(' ').filter(function(w){return w.length>2;});
+      if(!wa.length||!wb.length) return false;
+      var m=wa.filter(function(w){return wb.some(function(x){return x.indexOf(w)>=0||w.indexOf(x)>=0;});});
+      return m.length>=1;
+    }
+    function fv(v){
+      if(!v&&v!==0)return '\u2014';
+      var a=Math.abs(v),neg=v<0;
+      var s=a>=10000000?(a/10000000).toFixed(2)+'Cr':a>=100000?(a/100000).toFixed(2)+'L':a>=1000?(a/1000).toFixed(1)+'K':Math.round(a).toLocaleString('en-IN');
+      return (neg?'-':'')+'\u20B9'+s;
+    }
+
+    // Build g2b index by normalised invoice number
+    var g2bByRef = {};
+    g2bInvs.forEach(function(inv){ var k=inv.inumNorm||normRef(inv.inum); if(k) g2bByRef[k]=inv; });
+
+    var seenG2B = {}, rows = [];
     // Pass 1: Books entries
-    +'  books.forEach(function(r){'
-    +'    var k=norm(r.refNo);'
-    +'    var g2b=k?g2bByRef[k]:null;'
-    // Dual match: invoice number AND party name must both match
-    +'    var matched=g2b&&nameSim(r.vendorName,g2b.supplierName);'
-    +'    if(matched){seenG2B[k]=true;}'
-    +'    rows.push({st:matched?"M":"B",r:r,g:matched?g2b:null});'
-    +'  });'
-    // Pass 2: GSTR-2B only
-    +'  g2bInvs.forEach(function(inv){'
-    +'    var k=inv.inumNorm||norm(inv.inum);'
-    +'    if(!seenG2B[k]) rows.push({st:"G",r:null,g:inv});'
-    +'  });'
-    +'  var cM=rows.filter(function(x){return x.st==="M";}).length;'
-    +'  var cB=rows.filter(function(x){return x.st==="B";}).length;'
-    +'  var cG=rows.filter(function(x){return x.st==="G";}).length;'
-    +'  var SL={"M":"<span style=\\"background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px\\">✅ Matched</span>",'
-    +'"B":"<span style=\\"background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px\\">📚 Only Books</span>",'
-    +'"G":"<span style=\\"background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px\\">📄 Only GSTR-2B</span>"};'
-    +'  var TD="padding:7px 9px;border-bottom:1px solid #f3f2f1;font-size:12px;";'
-    +'  var tbody=rows.map(function(x,i){'
-    +'    var bg=x.st==="M"?"":"x.st==="B"?"background:#fff8f8;":"background:#faf5ff;";'
-    +'    var r=x.r||{}; var g=x.g||{};'
-    +'    return "<tr style=\\""+bg+"\\">"'
-    +'    +"<td style=\\""+TD+"text-align:right;color:#8a8886;font-size:11px\\">"+(i+1)+"</td>"'
-    +'    +"<td style=\\""+TD+"\\">"+SL[x.st]+"</td>"'
-    +'    +"<td style=\\""+TD+"font-weight:600;border-left:3px solid #c8dff5\\">"+(r.moveNo||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"\\">"+(r.billDate||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"color:#0078d4;font-family:monospace\\">"+(r.refNo||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"\\">"+(r.vendorName||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"text-align:right\\">"+fv(r.taxable||0)+"</td>"'
-    +'    +"<td style=\\""+TD+"text-align:right\\">"+fv(r.igst||0)+"</td>"'
-    +'    +"<td style=\\""+TD+"text-align:right;border-right:3px solid #c8dff5\\">"+fv(r.cgst||0)+"</td>"'
-    +'    +"<td style=\\""+TD+"color:#107c10;font-family:monospace;border-left:3px solid #a0d8a0\\">"+(g.inum||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"\\">"+(g.dt||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"\\">"+(g.supplierName||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"font-family:monospace;font-size:10.5px\\">"+(g.supplierGSTIN||"—")+"</td>"'
-    +'    +"<td style=\\""+TD+"text-align:right\\">"+fv(g.txval||0)+"</td>"'
-    +'    +"<td style=\\""+TD+"text-align:right\\">"+fv(g.igst||0)+"</td>"'
-    +'    +"<td style=\\""+TD+"text-align:right;border-right:3px solid #a0d8a0\\">"+fv(g.cgst||0)+"</td>"'
-    +'    +"</tr>";'
-    +'  }).join("");'
-    +'  var pw=window.open("","_blank");'
-    +'  if(!pw){alert("Popup blocked — please allow popups");return;}'
-    +'  pw.document.write("<!DOCTYPE html><html><head><meta charset=\\"UTF-8\\"><title>Invoice Wise — "+mo+"</title>"'
-    +'  +"<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Segoe UI,sans-serif;background:#f3f2f1;font-size:12px}"'
-    +'  +".tb{background:#1a1a2e;padding:10px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:9}"'
-    +'  +".tb span{color:#fff;font-size:13px;font-weight:700}.wrap{padding:16px;overflow-x:auto}"'
-    +'  +"table{border-collapse:collapse;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.08);min-width:1100px}"'
-    +'  +"th{padding:6px 9px;font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid #e1dfdd;text-align:right;white-space:nowrap}"'
-    +'  +"th.L{text-align:left}tr:hover td{filter:brightness(.97)}</style></head><body>"'
-    +'  +"<div class=\\"tb\\">'
-    +'    <span>📊 Invoice Wise — "+mo+" · "+br+" · "+coKey+"</span>"'
-    +'    +"<span style=\\"margin-left:auto;display:flex;gap:8px\\">"'
-    +'    +"<span style=\\"background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px\\">✅ "+cM+" Matched</span>"'
-    +'    +"<span style=\\"background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px\\">📚 "+cB+" Only Books</span>"'
-    +'    +"<span style=\\"background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px\\">📄 "+cG+" Only 2B</span>"'
-    +'    +"<button onclick=\\"window.close()\\" style=\\"background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:3px 12px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:12px\\">✕ Close</button>"'
-    +'    +"</span></div>"'
-    +'  +"<div class=\\"wrap\\"><table><thead><tr>"'
-    +'  +"<th class=\\"L\\" style=\\"width:36px\\">#</th><th class=\\"L\\">Status</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#dbeeff;border-left:3px solid #c8dff5\\">JE No</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#dbeeff\\">Bill Date</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#dbeeff\\">Ref No</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#dbeeff\\">Vendor Name</th>"'
-    +'  +"<th style=\\"background:#dbeeff\\">Taxable</th><th style=\\"background:#dbeeff\\">IGST</th>"'
-    +'  +"<th style=\\"background:#dbeeff;border-right:3px solid #c8dff5\\">CGST</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#d8f5e5;border-left:3px solid #a0d8a0\\">Inv No</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#d8f5e5\\">Inv Date</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#d8f5e5\\">Supplier</th>"'
-    +'  +"<th class=\\"L\\" style=\\"background:#d8f5e5\\">GSTIN</th>"'
-    +'  +"<th style=\\"background:#d8f5e5\\">Taxable</th><th style=\\"background:#d8f5e5\\">IGST</th>"'
-    +'  +"<th style=\\"background:#d8f5e5;border-right:3px solid #a0d8a0\\">CGST</th>"'
-    +'  +"</tr></thead><tbody>"+tbody+"</tbody></table></div>"'
-    +'  +"</body></html>");'
-    +'  pw.document.close();'
+    books.forEach(function(r){
+      var k = normRef(r.refNo);
+      var g = k ? g2bByRef[k] : null;
+      // Dual match: invoice number AND party name
+      var matched = g && nameSim(r.vendorName, g.supplierName);
+      if(matched) seenG2B[k] = true;
+      rows.push({st: matched?'M':'B', r:r, g:matched?g:null});
+    });
+    // Pass 2: GSTR-2B only entries
+    g2bInvs.forEach(function(inv){
+      var k = inv.inumNorm||normRef(inv.inum);
+      if(!seenG2B[k]) rows.push({st:'G', r:null, g:inv});
+    });
+
+    var cM=0,cB=0,cG=0;
+    rows.forEach(function(x){ if(x.st==='M')cM++; else if(x.st==='B')cB++; else cG++; });
+
+    var TD = 'padding:7px 9px;border-bottom:1px solid #f3f2f1;font-size:12px;';
+    var tbody = rows.map(function(x,i){
+      var bgColor = x.st==='M'?'':'background:'+(x.st==='B'?'#fff8f8':'#faf5ff')+';';
+      var r=x.r||{}, g=x.g||{};
+      var stBadge = x.st==='M'
+        ? '<span style="background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px">\u2705 Matched</span>'
+        : x.st==='B'
+        ? '<span style="background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px">\uD83D\uDCDA Only Books</span>'
+        : '<span style="background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px">\uD83D\uDCC4 Only GSTR-2B</span>';
+      return '<tr style="'+bgColor+'">'
+        +'<td style="'+TD+'text-align:right;color:#8a8886;font-size:11px">'+(i+1)+'</td>'
+        +'<td style="'+TD+'">'+stBadge+'</td>'
+        +'<td style="'+TD+'font-weight:600;border-left:3px solid #c8dff5">'+(r.moveNo||'\u2014')+'</td>'
+        +'<td style="'+TD+'">'+(r.billDate||'\u2014')+'</td>'
+        +'<td style="'+TD+'color:#0078d4;font-family:monospace">'+(r.refNo||'\u2014')+'</td>'
+        +'<td style="'+TD+';max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.vendorName||'\u2014')+'</td>'
+        +'<td style="'+TD+'text-align:right">'+fv(r.taxable||0)+'</td>'
+        +'<td style="'+TD+'text-align:right">'+fv(r.igst||0)+'</td>'
+        +'<td style="'+TD+'text-align:right;border-right:3px solid #c8dff5">'+fv(r.cgst||0)+'</td>'
+        +'<td style="'+TD+'color:#107c10;font-family:monospace;border-left:3px solid #a0d8a0">'+(g.inum||'\u2014')+'</td>'
+        +'<td style="'+TD+'">'+(g.dt||'\u2014')+'</td>'
+        +'<td style="'+TD+';max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(g.supplierName||'\u2014')+'</td>'
+        +'<td style="'+TD+'font-family:monospace;font-size:10.5px">'+(g.supplierGSTIN||'\u2014')+'</td>'
+        +'<td style="'+TD+'text-align:right">'+fv(g.txval||0)+'</td>'
+        +'<td style="'+TD+'text-align:right">'+fv(g.igst||0)+'</td>'
+        +'<td style="'+TD+'text-align:right;border-right:3px solid #a0d8a0">'+fv(g.cgst||0)+'</td>'
+        +'</tr>';
+    }).join('');
+
+    var TDTOT='padding:7px 9px;font-size:12px;font-weight:700;text-align:right;background:#faf9f8;border-top:2px solid #e1dfdd;';
+    var tBT=0,tBI=0,tBC=0, tGT=0,tGI=0,tGC=0;
+    rows.forEach(function(x){tBT+=(x.r?x.r.taxable||0:0);tBI+=(x.r?x.r.igst||0:0);tBC+=(x.r?x.r.cgst||0:0);tGT+=(x.g?x.g.txval||0:0);tGI+=(x.g?x.g.igst||0:0);tGC+=(x.g?x.g.cgst||0:0);});
+    tbody += '<tr><td colspan="2" style="'+TDTOT+'text-align:left">TOTAL ('+rows.length+')</td>'
+      +'<td colspan="4" style="'+TDTOT+'border-left:3px solid #c8dff5"></td>'
+      +'<td style="'+TDTOT+'">'+fv(tBT)+'</td><td style="'+TDTOT+'">'+fv(tBI)+'</td><td style="'+TDTOT+'border-right:3px solid #c8dff5">'+fv(tBC)+'</td>'
+      +'<td colspan="4" style="'+TDTOT+'border-left:3px solid #a0d8a0"></td>'
+      +'<td style="'+TDTOT+'">'+fv(tGT)+'</td><td style="'+TDTOT+'">'+fv(tGI)+'</td><td style="'+TDTOT+'border-right:3px solid #a0d8a0">'+fv(tGC)+'</td></tr>';
+
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+      +'<title>Invoice Wise \u2014 '+month+'</title>'
+      +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Segoe UI,sans-serif;background:#f3f2f1;font-size:12px}'
+      +'.tb{background:#1a1a2e;height:46px;display:flex;align-items:center;padding:0 18px;gap:10px;position:sticky;top:0;z-index:9}'
+      +'.wrap{padding:14px 18px;overflow-x:auto}'
+      +'table{border-collapse:collapse;width:100%;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.08);min-width:1200px}'
+      +'th{padding:6px 9px;font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid #e1dfdd;text-align:right;white-space:nowrap}'
+      +'th.L{text-align:left}tr:hover td{filter:brightness(.97)}</style></head><body>'
+      +'<div class="tb">'
+      +'<div style="width:26px;height:26px;background:#107c10;border-radius:3px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;color:#fff;flex-shrink:0">GST</div>'
+      +'<span style="color:#fff;font-size:13px;font-weight:700">\uD83D\uDCCA Invoice Wise \u2014 '+month+' \u00b7 '+branch+' \u00b7 '+coKey+'</span>'
+      +'<span style="margin-left:auto;display:flex;gap:7px">'
+      +'<span style="background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px">\u2705 '+cM+' Matched</span>'
+      +'<span style="background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px">\uD83D\uDCDA '+cB+' Only Books</span>'
+      +'<span style="background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px">\uD83D\uDCC4 '+cG+' Only 2B</span>'
+      +'<button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:3px 12px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:12px">\u00d7 Close</button>'
+      +'</span></div>'
+      +'<div class="wrap"><table><thead><tr>'
+      +'<th class="L" style="width:36px">#</th><th class="L">Status</th>'
+      +'<th class="L" style="background:#dbeeff;border-left:3px solid #c8dff5">JE No</th>'
+      +'<th class="L" style="background:#dbeeff">Bill Date</th>'
+      +'<th class="L" style="background:#dbeeff">Ref No</th>'
+      +'<th class="L" style="background:#dbeeff">Vendor Name</th>'
+      +'<th style="background:#dbeeff">Taxable</th><th style="background:#dbeeff">IGST</th>'
+      +'<th style="background:#dbeeff;border-right:3px solid #c8dff5">CGST</th>'
+      +'<th class="L" style="background:#d8f5e5;border-left:3px solid #a0d8a0">Inv No</th>'
+      +'<th class="L" style="background:#d8f5e5">Inv Date</th>'
+      +'<th class="L" style="background:#d8f5e5">Supplier</th>'
+      +'<th class="L" style="background:#d8f5e5">GSTIN</th>'
+      +'<th style="background:#d8f5e5">Taxable</th><th style="background:#d8f5e5">IGST</th>'
+      +'<th style="background:#d8f5e5;border-right:3px solid #a0d8a0">CGST</th>'
+      +'</tr></thead><tbody>'+tbody+'</tbody></table></div></body></html>';
+
+    var pw = window.open('','_blank');
+    if(pw){ pw.document.write(html); pw.document.close(); }
+    else {
+      var blob=new Blob([html],{type:'text/html'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a'); a.href=url; a.target='_blank'; a.click();
+      setTimeout(function(){URL.revokeObjectURL(url);},5000);
+    }
+  };
+
+  // invDetailFn: embeds _openInvDetail logic + data directly into the popup
+  // so it works whether opened via window.open or Blob URL
+  var invDetailFn = (function(){
+    var itcJSON = JSON.stringify(_itcData);
+    var g2bJSON = JSON.stringify(_g2bData);
+    return 'var _itc='+itcJSON+';var _g2b='+g2bJSON+';'
+    +'function _norm(s){return (s||"").toString().trim().toUpperCase().replace(/[\\s\\-\\/\\\\.,]+/g,"");}'
+    +'function _nName(s){return (s||"").toString().toLowerCase().replace(/[^a-z0-9]/g," ").replace(/\\s+/g," ").trim();}'
+    +'function _nSim(a,b){var wa=_nName(a).split(" ").filter(function(w){return w.length>2;});var wb=_nName(b).split(" ").filter(function(w){return w.length>2;});if(!wa.length||!wb.length)return false;return wa.filter(function(w){return wb.some(function(x){return x.indexOf(w)>=0||w.indexOf(x)>=0;});}).length>=1;}'
+    +'function _fv(v){if(!v&&v!==0)return "\u2014";var a=Math.abs(v),neg=v<0,s=a>=10000000?(a/10000000).toFixed(2)+"Cr":a>=100000?(a/100000).toFixed(2)+"L":a>=1000?(a/1000).toFixed(1)+"K":Math.round(a).toLocaleString("en-IN");return (neg?"-":"")+"\\u20B9"+s;}'
+    +'window.showInvDetail=function(coKey,brEnc,moEnc){'
+    +'var br=decodeURIComponent(brEnc),mo=decodeURIComponent(moEnc);'
+    +'var books=_itc.filter(function(r){return r.coKey===coKey&&(r.branch||"")===br&&r.month===mo;});'
+    +'var g2bInvs=[];_g2b.forEach(function(d){if(d.coKey!==coKey||(d.branch||"")!==br||d.month!==mo)return;(d.invoiceList||[]).forEach(function(inv){g2bInvs.push(inv);});});'
+    +'var idx={};g2bInvs.forEach(function(inv){var k=inv.inumNorm||_norm(inv.inum);if(k)idx[k]=inv;});'
+    +'var seen={},rows=[];'
+    +'books.forEach(function(r){var k=_norm(r.refNo);var g=k?idx[k]:null;var m=g&&_nSim(r.vendorName,g.supplierName);if(m)seen[k]=true;rows.push({st:m?"M":"B",r:r,g:m?g:null});});'
+    +'g2bInvs.forEach(function(inv){var k=inv.inumNorm||_norm(inv.inum);if(!seen[k])rows.push({st:"G",r:null,g:inv});});'
+    +'var cM=0,cB=0,cG=0;rows.forEach(function(x){x.st==="M"?cM++:x.st==="B"?cB++:cG++;});'
+    +'var TD="padding:7px 9px;border-bottom:1px solid #f3f2f1;font-size:12px;";'
+    +'var SB={"M":"<span style=\\"background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px\\">\u2705 Matched</span>",'
+    +'"B":"<span style=\\"background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px\\">\uD83D\uDCDA Only Books</span>",'
+    +'"G":"<span style=\\"background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px\\">\uD83D\uDCC4 Only GSTR-2B</span>"};'
+    +'var tbody=rows.map(function(x,i){var bg=x.st==="M"?"":"background:"+(x.st==="B"?"#fff8f8":"#faf5ff")+";";var r=x.r||{},g=x.g||{};'
+    +'return "<tr style=\\""+bg+"\\">"'
+    +'+"<td style=\\""+TD+"text-align:right;color:#8a8886;font-size:11px\\">"+(i+1)+"</td>"'
+    +'+"<td style=\\""+TD+"\\">"+SB[x.st]+"</td>"'
+    +'+"<td style=\\""+TD+"font-weight:600;border-left:3px solid #c8dff5\\">"+(r.moveNo||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+"\\">"+(r.billDate||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+"color:#0078d4;font-family:monospace\\">"+(r.refNo||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+";max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\\">"+(r.vendorName||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+"text-align:right\\">"+_fv(r.taxable||0)+"</td>"'
+    +'+"<td style=\\""+TD+"text-align:right\\">"+_fv(r.igst||0)+"</td>"'
+    +'+"<td style=\\""+TD+"text-align:right;border-right:3px solid #c8dff5\\">"+_fv(r.cgst||0)+"</td>"'
+    +'+"<td style=\\""+TD+"color:#107c10;font-family:monospace;border-left:3px solid #a0d8a0\\">"+(g.inum||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+"\\">"+(g.dt||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+";max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\\">"+(g.supplierName||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+"font-family:monospace;font-size:10.5px\\">"+(g.supplierGSTIN||"\u2014")+"</td>"'
+    +'+"<td style=\\""+TD+"text-align:right\\">"+_fv(g.txval||0)+"</td>"'
+    +'+"<td style=\\""+TD+"text-align:right\\">"+_fv(g.igst||0)+"</td>"'
+    +'+"<td style=\\""+TD+"text-align:right;border-right:3px solid #a0d8a0\\">"+_fv(g.cgst||0)+"</td>"'
+    +'"</tr>";}).join("");'
+    +'var TTOT="padding:7px 9px;font-size:12px;font-weight:700;text-align:right;background:#faf9f8;border-top:2px solid #e1dfdd;";'
+    +'var tBT=0,tBI=0,tBC=0,tGT=0,tGI=0,tGC=0;rows.forEach(function(x){tBT+=(x.r?x.r.taxable||0:0);tBI+=(x.r?x.r.igst||0:0);tBC+=(x.r?x.r.cgst||0:0);tGT+=(x.g?x.g.txval||0:0);tGI+=(x.g?x.g.igst||0:0);tGC+=(x.g?x.g.cgst||0:0);});'
+    +'tbody+="<tr><td colspan=\\"2\\" style=\\""+TTOT+"text-align:left\\">TOTAL ("+rows.length+")</td><td colspan=\\"4\\" style=\\""+TTOT+"border-left:3px solid #c8dff5\\"></td><td style=\\""+TTOT+"\\">"+_fv(tBT)+"</td><td style=\\""+TTOT+"\\">"+_fv(tBI)+"</td><td style=\\""+TTOT+"border-right:3px solid #c8dff5\\">"+_fv(tBC)+"</td><td colspan=\\"4\\" style=\\""+TTOT+"border-left:3px solid #a0d8a0\\"></td><td style=\\""+TTOT+"\\">"+_fv(tGT)+"</td><td style=\\""+TTOT+"\\">"+_fv(tGI)+"</td><td style=\\""+TTOT+"border-right:3px solid #a0d8a0\\">"+_fv(tGC)+"</td></tr>";'
+    +'var html="<!DOCTYPE html><html><head><meta charset=\\"UTF-8\\"><title>Invoice Wise</title>"'
+    +'+"<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Segoe UI,sans-serif;background:#f3f2f1;font-size:12px}.tb{background:#1a1a2e;height:46px;display:flex;align-items:center;padding:0 18px;gap:10px;position:sticky;top:0;z-index:9}.wrap{padding:14px 18px;overflow-x:auto}table{border-collapse:collapse;width:100%;background:#fff;min-width:1200px}th{padding:6px 9px;font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid #e1dfdd;text-align:right;white-space:nowrap}th.L{text-align:left}tr:hover td{filter:brightness(.97)}</style></head><body>"'
+    +'+"<div class=\\"tb\\"><span style=\\"color:#fff;font-size:13px;font-weight:700\\">\uD83D\uDCCA Invoice Wise \u2014 "+mo+" \u00b7 "+(br||"Company")+"\u00b7 "+coKey+"</span>"'
+    +'+"<span style=\\"margin-left:auto;display:flex;gap:7px\\"><span style=\\"background:#dff6dd;color:#107c10;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px\\">\u2705 "+cM+" Matched</span><span style=\\"background:#fde7e9;color:#d83b01;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px\\">\uD83D\uDCDA "+cB+" Only Books</span><span style=\\"background:#f0e6ff;color:#5c0099;font-size:11px;font-weight:700;padding:2px 9px;border-radius:2px\\">\uD83D\uDCC4 "+cG+" Only 2B</span>"'
+    +'+"<button onclick=\\"window.close()\\" style=\\"background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:3px 12px;border-radius:3px;cursor:pointer;font-size:12px\\">\u00d7 Close</button></span></div>"'
+    +'+"<div class=\\"wrap\\"><table><thead><tr><th class=\\"L\\" style=\\"width:36px\\">#</th><th class=\\"L\\">Status</th><th class=\\"L\\" style=\\"background:#dbeeff;border-left:3px solid #c8dff5\\">JE No</th><th class=\\"L\\" style=\\"background:#dbeeff\\">Bill Date</th><th class=\\"L\\" style=\\"background:#dbeeff\\">Ref No</th><th class=\\"L\\" style=\\"background:#dbeeff\\">Vendor Name</th><th style=\\"background:#dbeeff\\">Taxable</th><th style=\\"background:#dbeeff\\">IGST</th><th style=\\"background:#dbeeff;border-right:3px solid #c8dff5\\">CGST</th><th class=\\"L\\" style=\\"background:#d8f5e5;border-left:3px solid #a0d8a0\\">Inv No</th><th class=\\"L\\" style=\\"background:#d8f5e5\\">Inv Date</th><th class=\\"L\\" style=\\"background:#d8f5e5\\">Supplier</th><th class=\\"L\\" style=\\"background:#d8f5e5\\">GSTIN</th><th style=\\"background:#d8f5e5\\">Taxable</th><th style=\\"background:#d8f5e5\\">IGST</th><th style=\\"background:#d8f5e5;border-right:3px solid #a0d8a0\\">CGST</th></tr></thead><tbody>"+tbody+"</tbody></table></div></body></html>";'
+    +'var pw=window.open("","_blank");'
+    +'if(pw){pw.document.write(html);pw.document.close();}'
+    +'else{var bl=new Blob([html],{type:"text/html"});var u=URL.createObjectURL(bl);var a=document.createElement("a");a.href=u;a.target="_blank";a.click();setTimeout(function(){URL.revokeObjectURL(u);},5000);}'
     +'};';
   })();
+
 
   /* ── Filter JS ──────────────────────────────────────────────── */
   var filterFn = '(function(){'
