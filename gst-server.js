@@ -698,7 +698,7 @@ app.post('/api/sync/rcm', async (req, res) => {
       const batch = await odooCall(session, 'account.move', 'read',
         [moveIds.slice(i, i + 200)],
         { fields: ['id', 'name', 'invoice_date', 'date', 'partner_id',
-                   'amount_untaxed_signed', 'amount_untaxed', 'ref'] }
+                   'amount_untaxed_signed', 'amount_untaxed', 'ref', 'move_type'] }
       );
       batch.forEach(m => { movesMap[m.id] = m; });
     }
@@ -708,7 +708,12 @@ app.post('/api/sync/rcm', async (req, res) => {
       const mid  = line.move_id[0];
       const code = acIdToCode[line.account_id[0]];
       const type = RCM_ACCOUNT_TYPE[code];
-      const amt  = Math.abs(line.debit || 0);
+      // FIX: Use signed balance (debit - credit) so credit notes produce negative amounts.
+      // Previously used Math.abs(debit) which gave 0 for credit-note lines (debit=0, credit>0),
+      // causing all credit notes to be silently dropped by the > 0 filter below.
+      const amt = (line.balance !== undefined && line.balance !== false)
+        ? line.balance
+        : ((line.debit || 0) - (line.credit || 0));
       if (!moveTax[mid]) moveTax[mid] = { igst: 0, cgst: 0, sgst: 0 };
       if      (type === 'igst') moveTax[mid].igst += amt;
       else if (type === 'cgst') moveTax[mid].cgst += amt;
@@ -725,27 +730,29 @@ app.post('/api/sync/rcm', async (req, res) => {
         const month = d
           ? MONTH_LABELS[parseInt(d.slice(5, 7), 10) - 1] + ' ' + d.slice(0, 4)
           : '';
+        const isRefund = move ? (move.move_type === 'in_refund') : false;
+        // FIX: normalise taxable sign — bills = +positive, credit notes = -negative.
+        // Do NOT use amount_untaxed_signed (Odoo sign is inverted for purchase moves).
         const taxable = move
-          ? Math.abs(
-              (move.amount_untaxed_signed !== undefined && move.amount_untaxed_signed !== false)
-                ? move.amount_untaxed_signed
-                : (move.amount_untaxed || 0)
-            )
+          ? (isRefund
+              ? -Math.abs(move.amount_untaxed || 0)
+              :  Math.abs(move.amount_untaxed || 0))
           : 0;
         return {
-          moveId:  mid,
-          entryNo: move ? move.name : String(mid),
-          date:    d,
+          moveId:   mid,
+          entryNo:  move ? move.name : String(mid),
+          isRefund,
+          date:     d,
           month,
-          vendor:  move?.partner_id?.[1] || '—',
-          ref:     move?.ref || '',
-          branch:  info.branch,
-          company: info.company,
-          coKey:   info.coKey,
-          taxable: round(taxable),
-          igst:    round(tax.igst),
-          cgst:    round(tax.cgst),
-          sgst:    round(tax.sgst),
+          vendor:   move?.partner_id?.[1] || '—',
+          ref:      move?.ref || '',
+          branch:   info.branch,
+          company:  info.company,
+          coKey:    info.coKey,
+          taxable:  round(taxable),
+          igst:     round(tax.igst),
+          cgst:     round(tax.cgst),
+          sgst:     round(tax.sgst),
         };
       })
       .filter(r => {
@@ -754,11 +761,13 @@ app.post('/api/sync/rcm', async (req, res) => {
           console.log(`   ⛔ Skipping BILL entry: ${r.entryNo}`);
           return false;
         }
-        return r.igst > 0 || r.cgst > 0 || r.sgst > 0;
+        // FIX: use !== 0 (not > 0) so credit notes with negative GST are kept.
+        return r.igst !== 0 || r.cgst !== 0 || r.sgst !== 0;
       })
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    console.log(`✅ RCM: ${data.length} transactions from ${allLines.length} journal lines`);
+    const cnCount = data.filter(r => r.isRefund).length;
+    console.log(`✅ RCM: ${data.length} transactions (${data.length - cnCount} bills, ${cnCount} credit notes) from ${allLines.length} journal lines`);
     res.json({ ok: true, count: allLines.length, txCount: data.length, data });
   } catch (e) {
     console.error('❌ RCM error:', e.message);
@@ -972,13 +981,13 @@ app.post('/api/sync/itc', async (req, res) => {
       const mo    = parseInt(d.slice(5, 7), 10) - 1;
       const month = (!isNaN(yr) && !isNaN(mo) && mo >= 0 && mo <= 11)
         ? MONTH_SHORT[mo] + ' ' + yr : '';
-      // FIX: For MISC/ISD distribution entries, amount_untaxed = 0 and we cannot reliably
-      // derive the taxable base because the effective GST rate may be 5%, 12%, 18%, or 28%.
-      // The old code used a hardcoded ÷0.18 which gave wrong values for non-18% invoices.
-      // Keep taxable = 0 for MISC entries; GST amounts are still correct from journal lines.
-      // For ISD credit-note distributions, GST amounts will already be negative (correct).
+      // For MISC (entry) moves, amount_untaxed = 0; derive taxable from GST amounts
+      // (CGST+SGST = 2× effective; IGST alone — use proportional inverse for display)
+      const isRefund = g.moveType === 'in_refund';
+      // FIX: For MISC/ISD distribution entries, taxable base isn't available in Odoo's
+      // amount_untaxed. Show 0 instead of an inaccurate approximation based on
+      // hardcoded 18% rate (wrong for 5%, 12%, 28% invoices).
       const taxable  = round(g.taxable);
-      const isRefund = (g.moveType === 'in_refund');
       return {
         moveId:     g.moveId,
         moveNo:     g.moveNo,
