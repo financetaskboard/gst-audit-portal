@@ -777,23 +777,82 @@ app.post('/api/sync/rcm', async (req, res) => {
 
 // ── ITC Books Sync ────────────────────────────────────────────
 const ITC_ACCOUNT_MAP = {
+  // ── Ginni Systems Limited (GSL) ──────────────────────────────
   '234001':  { taxType: 'cgst', itcType: 'Normal', coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
   '234002':  { taxType: 'sgst', itcType: 'Normal', coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
   '234003':  { taxType: 'igst', itcType: 'Normal', coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
   '234004':  { taxType: 'igst', itcType: 'ISD',    coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
   '234008':  { taxType: 'cgst', itcType: 'ISD',    coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
   '234009':  { taxType: 'sgst', itcType: 'ISD',    coKey: 'gsl',   company: 'Ginni Systems Limited'                    },
+
+  // ── Browntape Technologies Private Limited ───────────────────
   '2341002': { taxType: 'cgst', itcType: 'Normal', coKey: 'bt',    company: 'Browntape Technologies Private Limited'   },
   '2341006': { taxType: 'sgst', itcType: 'Normal', coKey: 'bt',    company: 'Browntape Technologies Private Limited'   },
   '2341010': { taxType: 'igst', itcType: 'Normal', coKey: 'bt',    company: 'Browntape Technologies Private Limited'   },
+
+  // ── Easemy Business Private Limited ─────────────────────────
   '2341003': { taxType: 'cgst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
   '2341007': { taxType: 'sgst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
   '2341011': { taxType: 'igst', itcType: 'Normal', coKey: 'em',    company: 'Easemy Business Private Limited'          },
+
+  // ── Roxfortech Infosolutions Private Limited ─────────────────
   '2341001': { taxType: 'cgst', itcType: 'Normal', coKey: 'roxfo', company: 'Roxfortech Infosolutions Private Limited' },
   '2341005': { taxType: 'sgst', itcType: 'Normal', coKey: 'roxfo', company: 'Roxfortech Infosolutions Private Limited' },
   '2341009': { taxType: 'igst', itcType: 'Normal', coKey: 'roxfo', company: 'Roxfortech Infosolutions Private Limited' },
 };
 const ITC_ACCOUNT_CODES = Object.keys(ITC_ACCOUNT_MAP);
+
+// ── Diagnostic: check what accounts a specific bill uses ─────
+// POST /api/debug/bill  { moveName: "BHR/2024/2836" }
+// Returns all journal lines with their account codes so you can
+// identify missing codes and add them to ITC_ACCOUNT_MAP above.
+app.post('/api/debug/bill', async (req, res) => {
+  const s   = await loadSettings();
+  const cfg = {
+    url:      req.body.url      || s.url,
+    db:       req.body.db       || s.db,
+    username: req.body.username || s.username,
+    apiKey:   req.body.apiKey === '••••••••' ? s.apiKey : (req.body.apiKey || s.apiKey)
+  };
+  const { moveName } = req.body;
+  if (!moveName) return res.status(400).json({ ok: false, error: 'moveName required' });
+
+  try {
+    const session = await odooAuthenticate(cfg.url, cfg.db, cfg.username, cfg.apiKey);
+    const moves = await odooCall(session, 'account.move', 'search_read',
+      [[['name', '=', moveName]]],
+      { fields: ['id','name','move_type','date','ref','partner_id','amount_untaxed'], limit: 5 }
+    );
+    if (!moves.length) return res.json({ ok: false, error: `No move found: ${moveName}` });
+
+    const moveId = moves[0].id;
+    const lines  = await odooCall(session, 'account.move.line', 'search_read',
+      [[['move_id', '=', moveId]]],
+      { fields: ['account_id','name','debit','credit','balance','tax_line_id'], limit: 100 }
+    );
+
+    const result = lines.map(l => ({
+      account_id:   l.account_id[0],
+      account_code: l.account_id[1]?.split(' ')[0] || '',
+      account_name: l.account_id[1] || '',
+      label:        l.name || '',
+      debit:        l.debit,
+      credit:       l.credit,
+      balance:      l.balance,
+      is_tax_line:  !!l.tax_line_id,
+      in_itc_map:   ITC_ACCOUNT_CODES.includes((l.account_id[1]||'').split(' ')[0])
+    }));
+
+    const missingTaxAccounts = result
+      .filter(l => l.is_tax_line && !l.in_itc_map)
+      .map(l => ({ code: l.account_code, name: l.account_name }));
+
+    console.log(`🔍 Debug bill ${moveName}: ${lines.length} lines, ${missingTaxAccounts.length} missing tax accounts`);
+    res.json({ ok: true, move: moves[0], lines: result, missingTaxAccounts });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
 
 app.post('/api/sync/itc', async (req, res) => {
   const s   = await loadSettings();
@@ -1034,7 +1093,21 @@ app.get('/', (req, res) => {
 //  POST   /api/state/:key    — save one key (chunked if large)
 //  DELETE /api/state         — wipe all state
 // ══════════════════════════════════════════════════════════════
-const STATE_KEYS = ['gst_cfg','gst_g1','gst_3b','gst_rcm','gst_sales','gst_credit','gst_g2b','gst_itc','gst_isd','gst_audit_3b_v1','gst_audit_rcm_v1'];
+const STATE_KEYS = [
+  'gst_cfg',
+  // FY 2025-26
+  'gst_sales_2526','gst_credit_2526','gst_g1_2526','gst_3b_2526','gst_rcm_2526',
+  'gst_g2b_2526','gst_itc_2526','gst_isd_2526','gst_g1a_2526',
+  // FY 2026-27
+  'gst_sales_2627','gst_credit_2627','gst_g1_2627','gst_3b_2627','gst_rcm_2627',
+  'gst_g2b_2627','gst_itc_2627','gst_isd_2627','gst_g1a_2627',
+  // FY 2024-25
+  'gst_sales_2425','gst_credit_2425','gst_g1_2425','gst_3b_2425','gst_rcm_2425',
+  'gst_g2b_2425','gst_itc_2425','gst_isd_2425','gst_g1a_2425',
+  // Legacy keys (migration / backup compat)
+  'gst_cfg','gst_g1','gst_3b','gst_rcm','gst_sales','gst_credit',
+  'gst_g2b','gst_itc','gst_isd','gst_audit_3b_v1','gst_audit_rcm_v1'
+];
 
 // GET /api/state — load all keys at once
 app.get('/api/state', async (req, res) => {
