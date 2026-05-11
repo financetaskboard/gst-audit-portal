@@ -828,8 +828,8 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
                 <input class="finput" id="gstin-gsl" placeholder="06AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px"/>
               </div>
               <div class="fg">
-                <label class="flabel">Goa 🆕</label>
-                <input class="finput" id="gstin-gsl-goa" placeholder="30AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px;border-color:#e6a817"/>
+                <label class="flabel">Goa</label>
+                <input class="finput" id="gstin-gsl-goa" placeholder="30AACCS..." oninput="saveGSTINMap()" style="font-family:monospace;font-size:12px"/>
               </div>
               <div class="fg">
                 <label class="flabel">Maharashtra</label>
@@ -1291,6 +1291,7 @@ function pINR(n){const a=Math.abs(n),s=a>=10000000?(a/10000000).toFixed(4)+'Cr':
 // Takes PRIORITY over Odoo's company field.
 var SERIES_MAP = {
   'rbhr'  : 'gsl',   // Ginni Systems — Haryana debit/credit notes
+  'rbgo'  : 'gsl',   // Ginni Systems — Goa debit/credit notes
   'bgo'   : 'gsl',   // Ginni Systems — Goa branch purchase bills
   'rbtbil': 'bt',    // Browntape — Goa branch purchase bills
   'cnrx'  : 'roxfo', // Roxfortech — Haryana
@@ -1302,6 +1303,7 @@ var SERIES_MAP = {
 // Handles cases where Odoo stores the prefix itself as branch label.
 var PREFIX_BRANCH_MAP = {
   'bgo'   : 'Goa',
+  'rbgo'  : 'Goa',
   'rbtbil': 'Goa',
   'rbhr'  : 'Haryana',
   'cnrx'  : 'Haryana',
@@ -1320,6 +1322,7 @@ var PREFIX_BRANCH_MAP = {
 // Normalises known bad/abbreviated branch labels in cached data.
 var BRANCH_NORMALIZE_MAP = {
   'BGO'   : 'Goa',
+  'RBGO'  : 'Goa',
   'RBTBIL': 'Goa',
   'BTBIL' : 'Goa',
   'MISBT' : 'Goa',
@@ -2392,7 +2395,7 @@ function buildReconG1Books() {
 
   // Detect companies from data
   var COMPANIES = [
-    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni','bgo']               },
+    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni','bgo','rbgo']               },
     { name:'Easemy Business Pvt Ltd',              key:'em',     match:['easemy','sem']         },
     { name:'Browntape Infrosolution Pvt Ltd',      key:'bt',     match:['browntape','rbtbil']    },
     { name:'Roxfortech Infosolutions Pvt Ltd',     key:'roxfo',  match:['roxfortech','roxfo','bilro','cnrx','srx'] }
@@ -2809,7 +2812,7 @@ function switchDataTab(id,el){
 
 // ── RECON ──────────────────────────────────────────────────────
 function openReconDetail(){const html=buildDetailHTML();const w=window.open('','_blank');w.document.write(html);w.document.close();}
-const STATES=[{name:'West Bengal',code:'19'},{name:'Haryana',code:'06'},{name:'Maharashtra',code:'27'},{name:'Telangana',code:'36'},{name:'Karnataka',code:'29'},{name:'Gujarat',code:'24'},{name:'Uttar Pradesh',code:'09'},{name:'Tamil Nadu',code:'33'}];
+const STATES=[{name:'West Bengal',code:'19'},{name:'Haryana',code:'06'},{name:'Maharashtra',code:'27'},{name:'Telangana',code:'36'},{name:'Karnataka',code:'29'},{name:'Goa',code:'30'},{name:'Gujarat',code:'24'},{name:'Uttar Pradesh',code:'09'},{name:'Tamil Nadu',code:'33'}];
 function sd(s){let x=Math.sin(s+1)*10000;return x-Math.floor(x);}
 function genG1B(i){const t=Math.round(sd(i*7+1)*5000000)+800000,ig=Math.round(sd(i*7+2)*800000),cg=Math.round(sd(i*7+3)*400000),sg=cg+Math.round((sd(i*7+9)-.5)*10000);const fz=(v,j)=>v+Math.round((sd(i*7+4+j)-.5)*v*.04);return{books:{t,ig,cg,sg},gstr1:{t:fz(t,0),ig:fz(ig,1),cg:fz(cg,2),sg:fz(sg,3)},diff:{t:t-fz(t,0),ig:ig-fz(ig,1),cg:cg-fz(cg,2),sg:sg-fz(sg,3)}};}
 function genG1G3(i){const s=i+100,t=Math.round(sd(s*7+1)*5000000)+800000,ig=Math.round(sd(s*7+2)*800000),cg=Math.round(sd(s*7+3)*400000),sg=cg+Math.round((sd(s*7+9)-.5)*10000);const fz=(v,j)=>v+Math.round((sd(s*7+4+j)-.5)*v*.06);return{gstr1:{t,ig,cg,sg},gstr3b:{t:fz(t,0),ig:fz(ig,1),cg:fz(cg,2),sg:fz(sg,3)},diff:{t:t-fz(t,0),ig:ig-fz(ig,1),cg:cg-fz(cg,2),sg:sg-fz(sg,3)}};}
@@ -4585,7 +4588,7 @@ function updateDashCoRecon() {
   }
 
   var COMPANIES = [
-    { key:'gsl',   frags:['ginni','bgo'],                     label:'Ginni Systems Limited'                   },
+    { key:'gsl',   frags:['ginni','bgo','rbgo'],                  label:'Ginni Systems Limited'                   },
     { key:'em',    frags:['easemy','sem'],                     label:'Easemy Business Private Limited'         },
     { key:'bt',    frags:['browntape','rbtbil'],               label:'Browntape Technologies Private Limited'  },
     { key:'roxfo', frags:['roxfortech','roxfo','bilro','cnrx','srx'], label:'Roxfortech Infosolutions Private Limited' }
@@ -6248,7 +6251,7 @@ loadGstr3bState();
           '</div>' +
         '</div>' +
         '<div class="page-inner">' +
-          '<div class="info-box">&#128204; <strong>RCM Accounts synced from Odoo:</strong> 234005 (RCM IGST), 2341013 (RCM IGST-BT), 234006 (RCM CGST), 234007 (RCM SGST), 2341015 (RCM CGST-Zwing), 2341017 (RCM SGST-Zwing). Fetched <strong>transaction-wise</strong> — each journal entry tagged with branch &amp; company from its prefix (BHR, BMH, BWB, BKN → Ginni Systems; BTBIL → Browntape; BILRO → Roxfortech).</div>' +
+          '<div class="info-box">&#128204; <strong>RCM Accounts synced from Odoo:</strong> 234005 (RCM IGST), 2341013 (RCM IGST-BT), 234006 (RCM CGST), 234007 (RCM SGST), 2341015 (RCM CGST-Zwing), 2341017 (RCM SGST-Zwing). Fetched <strong>transaction-wise</strong> — each journal entry tagged with branch &amp; company from its prefix (BHR, BGO, BMH, BWB, BKN, BTL → Ginni Systems; BTBIL → Browntape; BILRO → Roxfortech).</div>' +
           '<div class="kpi-row">' +
             '<div class="kpi orange"><div class="kpi-lbl">Transactions</div><div class="kpi-val orange" id="rcm-kpi-months">\u2014</div><div class="kpi-sub">From Odoo</div></div>' +
             '<div class="kpi blue"><div class="kpi-lbl">Total RCM IGST</div><div class="kpi-val blue" id="rcm-kpi-igst">\u2014</div><div class="kpi-sub">Odoo books</div></div>' +
