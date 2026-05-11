@@ -1293,6 +1293,8 @@ var SERIES_MAP = {
   'rbhr'  : 'gsl',   // Ginni Systems — Haryana debit/credit notes
   'rbgo'  : 'gsl',   // Ginni Systems — Goa debit/credit notes
   'bgo'   : 'gsl',   // Ginni Systems — Goa branch purchase bills
+  'sgo'   : 'gsl',   // Ginni Systems — Goa SALES invoices
+  'cgo'   : 'gsl',   // Ginni Systems — Goa CREDIT notes (sales)
   'rbtbil': 'bt',    // Browntape — Goa branch purchase bills
   'cnrx'  : 'roxfo', // Roxfortech — Haryana
   'srx'   : 'roxfo', // Roxfortech — other state
@@ -1303,6 +1305,8 @@ var SERIES_MAP = {
 // Handles cases where Odoo stores the prefix itself as branch label.
 var PREFIX_BRANCH_MAP = {
   'bgo'   : 'Goa',
+  'sgo'   : 'Goa',
+  'cgo'   : 'Goa',
   'rbgo'  : 'Goa',
   'rbtbil': 'Goa',
   'rbhr'  : 'Haryana',
@@ -1322,6 +1326,8 @@ var PREFIX_BRANCH_MAP = {
 // Normalises known bad/abbreviated branch labels in cached data.
 var BRANCH_NORMALIZE_MAP = {
   'BGO'   : 'Goa',
+  'SGO'   : 'Goa',
+  'CGO'   : 'Goa',
   'RBGO'  : 'Goa',
   'RBTBIL': 'Goa',
   'BTBIL' : 'Goa',
@@ -1438,7 +1444,49 @@ function applySeriesMapToITC(arr) {
   });
 }
 
-var _activeDash = 'sales';
+// ── Fix coKey + branch on salesData / creditData ───────────────
+// Same logic as applySeriesMapToITC but keyed on invoice_no / cn_no
+// (the field Odoo puts the invoice number in for sales records).
+function applySeriesMapToSales(arr) {
+  if (!arr || !arr.length) return arr || [];
+  return arr.map(function(r) {
+    var prefix = (r.invoice_no || r.cn_no || r.name || '').split('/')[0].toLowerCase().trim();
+    var c = Object.assign({}, r);
+
+    // 1. Fix coKey + company from SERIES_MAP (invoice prefix)
+    if (prefix && SERIES_MAP[prefix]) {
+      c.coKey   = SERIES_MAP[prefix];
+      c.company = CO_NAMES_MAP[SERIES_MAP[prefix]] || r.company;
+    }
+    // 2. Fallback: company name contains a known keyword
+    if (!c.coKey || c.coKey === 'other') {
+      var cn = (c.company || '').toLowerCase();
+      if      (cn.indexOf('ginni') > -1)      { c.coKey = 'gsl';   c.company = CO_NAMES_MAP.gsl;   }
+      else if (cn.indexOf('browntape') > -1)  { c.coKey = 'bt';    c.company = CO_NAMES_MAP.bt;    }
+      else if (cn.indexOf('easemy') > -1)     { c.coKey = 'em';    c.company = CO_NAMES_MAP.em;    }
+      else if (cn.indexOf('roxfortech') > -1) { c.coKey = 'roxfo'; c.company = CO_NAMES_MAP.roxfo; }
+    }
+
+    // 3. Fix branch from invoice prefix (highest priority)
+    if (prefix && PREFIX_BRANCH_MAP[prefix]) {
+      c.branch = PREFIX_BRANCH_MAP[prefix];
+    }
+    // 4. Normalise known bad branch labels
+    else if (c.branch && BRANCH_NORMALIZE_MAP[c.branch.toUpperCase()]) {
+      c.branch = BRANCH_NORMALIZE_MAP[c.branch.toUpperCase()];
+    }
+
+    // 5. Final fallback: no branch → default per company
+    if (!c.branch || c.branch === 'Unknown') {
+      if      (c.coKey === 'gsl')   c.branch = 'Haryana';
+      else if (c.coKey === 'em')    c.branch = 'Haryana';
+      else if (c.coKey === 'bt')    c.branch = 'Goa';
+      else if (c.coKey === 'roxfo') c.branch = 'Haryana';
+    }
+
+    return c;
+  });
+}
 function switchDashboard(type) {
   _activeDash = type;
   var salesView = document.getElementById('dash-sales-view');
@@ -2149,8 +2197,8 @@ async function runSync(){
 
     if(!res.ok) throw new Error(res.error || 'Sync failed');
 
-    if(type==='sales'){ APP.salesData=res.data; buildSales(res.data); }
-    else              { APP.creditData=res.data; buildCredit(res.data); }
+    if(type==='sales'){ APP.salesData = applySeriesMapToSales(res.data); buildSales(APP.salesData); }
+    else              { APP.creditData = applySeriesMapToSales(res.data); buildCredit(APP.creditData); }
     saveAppState();
 
     setModalStatus('success',`✅ Sync complete! ${res.count} records loaded & saved locally.`);
@@ -2179,7 +2227,7 @@ const COMPANY_KEY = {
 
 // Multi-keyword match: SEM records in Odoo belong to Easemy Business
 const COMPANY_MATCH = {
-  gsl:    ['ginni'],
+  gsl:    ['ginni','sgo','cgo'],
   easemy: ['easemy', 'sem'],
   bt:     ['browntape'],
   roxfo:  ['roxfortech', 'roxfo', 'bilro', 'cnrx', 'srx']
@@ -2395,7 +2443,7 @@ function buildReconG1Books() {
 
   // Detect companies from data
   var COMPANIES = [
-    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni','bgo','rbgo']               },
+    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni','bgo','rbgo','sgo','cgo']               },
     { name:'Easemy Business Pvt Ltd',              key:'em',     match:['easemy','sem']         },
     { name:'Browntape Infrosolution Pvt Ltd',      key:'bt',     match:['browntape','rbtbil']    },
     { name:'Roxfortech Infosolutions Pvt Ltd',     key:'roxfo',  match:['roxfortech','roxfo','bilro','cnrx','srx'] }
@@ -4085,6 +4133,7 @@ function loadAppState(){
       var old4 = localStorage.getItem('gst_audit_portal_v1');
       if (old4) { var o4=JSON.parse(old4); APP.salesData=o4.salesData||[]; }
     }
+    if (typeof applySeriesMapToSales === 'function') APP.salesData = applySeriesMapToSales(APP.salesData);
   } catch(e) { console.warn('sales load:', e); }
 
   // ── Credit ────────────────────────────────────────────────────
@@ -4094,6 +4143,8 @@ function loadAppState(){
     else {
       var old5 = localStorage.getItem('gst_audit_portal_v1');
       if (old5) { var o5=JSON.parse(old5); APP.creditData=o5.creditData||[]; }
+    }
+    if (typeof applySeriesMapToSales === 'function') APP.creditData = applySeriesMapToSales(APP.creditData);
     }
   } catch(e) { console.warn('credit load:', e); }
 
@@ -4588,7 +4639,7 @@ function updateDashCoRecon() {
   }
 
   var COMPANIES = [
-    { key:'gsl',   frags:['ginni','bgo','rbgo'],                  label:'Ginni Systems Limited'                   },
+    { key:'gsl',   frags:['ginni','bgo','rbgo','sgo','cgo'],                  label:'Ginni Systems Limited'                   },
     { key:'em',    frags:['easemy','sem'],                     label:'Easemy Business Private Limited'         },
     { key:'bt',    frags:['browntape','rbtbil'],               label:'Browntape Technologies Private Limited'  },
     { key:'roxfo', frags:['roxfortech','roxfo','bilro','cnrx','srx'], label:'Roxfortech Infosolutions Private Limited' }
