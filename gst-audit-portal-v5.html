@@ -442,7 +442,11 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
               📥 Input
             </button>
           </div>
-          <select class="fsel"><option>FY 2025-26</option><option>FY 2024-25</option></select>
+          <select class="fsel" id="dash-fy-display" onchange="switchFY(this.value)" style="font-weight:600;color:var(--accent)">
+            <option value="2026-27">FY 2026-27</option>
+            <option value="2025-26">FY 2025-26</option>
+            <option value="2024-25">FY 2024-25</option>
+          </select>
           <button class="btn btn-success" onclick="toast('Exporting...','📤')">📤 Export</button>
         </div>
       </div>
@@ -464,6 +468,21 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
           <span class="flbl">📅 Filter:</span>
           <select class="fsel" id="dash-filter-month" onchange="dashFilterChanged()" style="min-width:110px">
             <option value="">All Months</option>
+            <optgroup label="FY 2026-27">
+            <option value="Apr 2026">Apr 2026</option>
+            <option value="May 2026">May 2026</option>
+            <option value="Jun 2026">Jun 2026</option>
+            <option value="Jul 2026">Jul 2026</option>
+            <option value="Aug 2026">Aug 2026</option>
+            <option value="Sep 2026">Sep 2026</option>
+            <option value="Oct 2026">Oct 2026</option>
+            <option value="Nov 2026">Nov 2026</option>
+            <option value="Dec 2026">Dec 2026</option>
+            <option value="Jan 2027">Jan 2027</option>
+            <option value="Feb 2027">Feb 2027</option>
+            <option value="Mar 2027">Mar 2027</option>
+            </optgroup>
+            <optgroup label="FY 2025-26">
             <option value="Apr 2025">Apr 2025</option>
             <option value="May 2025">May 2025</option>
             <option value="Jun 2025">Jun 2025</option>
@@ -476,6 +495,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
             <option value="Jan 2026">Jan 2026</option>
             <option value="Feb 2026">Feb 2026</option>
             <option value="Mar 2026">Mar 2026</option>
+            </optgroup>
           </select>
           <span class="flbl" style="margin-left:4px">or range:</span>
           <input type="date" id="dash-filter-from" class="fsel" onchange="dashFilterChanged()" style="padding:4px 8px;font-size:12px" title="From date">
@@ -2904,6 +2924,7 @@ function importGSTR1JSON(){
       renderGSTR1View();
       updateGSTR1StatusBar();
       saveAppState();
+      try { updateDashCoRecon(); } catch(e){} // ← refresh dashboard immediately
       g1PendingFile=null;
       document.getElementById('upload-ok').style.display='none';
       document.getElementById('json-inp').value='';
@@ -3869,6 +3890,9 @@ function _updateFYLabels() {
   // Topbar selector
   var sel = document.getElementById('fy-selector');
   if (sel) sel.value = APP.activeFY || '2025-26';
+  // Dashboard toolbar FY display dropdown
+  var dashFySel = document.getElementById('dash-fy-display');
+  if (dashFySel) dashFySel.value = APP.activeFY || '2025-26';
   // Breadcrumb
   var pbc = document.getElementById('dash-pbc');
   if (pbc && pbc.textContent.indexOf('FY') > -1)
