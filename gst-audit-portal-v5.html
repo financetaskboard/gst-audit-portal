@@ -2229,7 +2229,7 @@ const COMPANY_KEY = {
 
 // Multi-keyword match: SEM records in Odoo belong to Easemy Business
 const COMPANY_MATCH = {
-  gsl:    ['ginni','sgo','cgo'],
+  gsl:    ['ginni'],
   easemy: ['easemy', 'sem'],
   bt:     ['browntape'],
   roxfo:  ['roxfortech', 'roxfo', 'bilro', 'cnrx', 'srx']
@@ -2445,7 +2445,7 @@ function buildReconG1Books() {
 
   // Detect companies from data
   var COMPANIES = [
-    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni','bgo','rbgo','sgo','cgo']               },
+    { name:'Ginni Systems Ltd',                    key:'gsl',    match:['ginni','bgo','rbgo']               },
     { name:'Easemy Business Pvt Ltd',              key:'em',     match:['easemy','sem']         },
     { name:'Browntape Infrosolution Pvt Ltd',      key:'bt',     match:['browntape','rbtbil']    },
     { name:'Roxfortech Infosolutions Pvt Ltd',     key:'roxfo',  match:['roxfortech','roxfo','bilro','cnrx','srx'] }
@@ -4640,7 +4640,7 @@ function updateDashCoRecon() {
   }
 
   var COMPANIES = [
-    { key:'gsl',   frags:['ginni','bgo','rbgo','sgo','cgo'],                  label:'Ginni Systems Limited'                   },
+    { key:'gsl',   frags:['ginni','bgo','rbgo'],                  label:'Ginni Systems Limited'                   },
     { key:'em',    frags:['easemy','sem'],                     label:'Easemy Business Private Limited'         },
     { key:'bt',    frags:['browntape','rbtbil'],               label:'Browntape Technologies Private Limited'  },
     { key:'roxfo', frags:['roxfortech','roxfo','bilro','cnrx','srx'], label:'Roxfortech Infosolutions Private Limited' }
