@@ -1487,6 +1487,8 @@ function applySeriesMapToSales(arr) {
     return c;
   });
 }
+
+var _activeDash = 'sales';
 function switchDashboard(type) {
   _activeDash = type;
   var salesView = document.getElementById('dash-sales-view');
@@ -4145,7 +4147,6 @@ function loadAppState(){
       if (old5) { var o5=JSON.parse(old5); APP.creditData=o5.creditData||[]; }
     }
     if (typeof applySeriesMapToSales === 'function') APP.creditData = applySeriesMapToSales(APP.creditData);
-    }
   } catch(e) { console.warn('credit load:', e); }
 
   // ── GSTR-2B ───────────────────────────────────────────────────
