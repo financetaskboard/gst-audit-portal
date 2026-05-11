@@ -885,13 +885,13 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
             <div class="fg">
               <label class="flabel">Year</label>
               <select class="finput" id="g1-year">
-                <option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option>
+                <option value="2026">2026</option><option value="2027">2027</option><option value="2025">2025</option><option value="2024">2024</option>
               </select>
             </div>
             <div class="fg">
               <label class="flabel">Financial Year</label>
               <select class="finput" id="g1-fy">
-                <option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option>
+                <option value="2026-27">FY 2026-27</option><option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option>
               </select>
             </div>
           </div>
@@ -932,6 +932,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
           </select>
           <select class="fsel" id="g1v-fy-filter" onchange="renderGSTR1View()">
             <option value="all">All FY</option>
+            <option value="2026-27">FY 2026-27</option>
             <option value="2025-26">FY 2025-26</option>
             <option value="2024-25">FY 2024-25</option>
           </select>
@@ -1037,7 +1038,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
             <div class="fg">
               <label class="flabel">Financial Year</label>
               <select class="finput" id="g1a-fy">
-                <option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option>
+                <option value="2026-27">FY 2026-27</option><option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option>
               </select>
             </div>
           </div>
@@ -1086,6 +1087,7 @@ tr.total-row td{background:#faf9f8;font-weight:700;border-top:2px solid var(--bo
           </select>
           <select class="fsel" id="g1av-fy-filter" onchange="renderGSTR1AView()">
             <option value="all">All FYs</option>
+            <option value="2026-27">FY 2026-27</option>
             <option value="2025-26">FY 2025-26</option>
             <option value="2024-25">FY 2024-25</option>
           </select>
@@ -3871,6 +3873,34 @@ function _updateFYLabels() {
   var pbc = document.getElementById('dash-pbc');
   if (pbc && pbc.textContent.indexOf('FY') > -1)
     pbc.textContent = pbc.textContent.replace(/FY \d{4}-\d{2}/, fy);
+  // ── Sync ALL import-form FY selectors so they always match activeFY ──
+  var activeFY = APP.activeFY || '2025-26';
+  ['g1-fy','g1a-fy','g3b-fy'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    // If the option for activeFY already exists, just select it
+    var opt = el.querySelector('option[value="'+activeFY+'"]');
+    if (opt) { el.value = activeFY; return; }
+    // Otherwise inject it at the top so users can always import for the active FY
+    var newOpt = document.createElement('option');
+    newOpt.value = activeFY; newOpt.textContent = 'FY ' + activeFY;
+    el.insertBefore(newOpt, el.firstChild);
+    el.value = activeFY;
+  });
+  // Also sync the view filter dropdowns
+  ['g1v-fy-filter','g1av-fy-filter','g3bv-fy-filter'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    var opt = el.querySelector('option[value="'+activeFY+'"]');
+    if (!opt) {
+      var newOpt = document.createElement('option');
+      newOpt.value = activeFY; newOpt.textContent = 'FY ' + activeFY;
+      // Insert after the "all" option
+      var allOpt = el.querySelector('option[value="all"]');
+      if (allOpt && allOpt.nextSibling) el.insertBefore(newOpt, allOpt.nextSibling);
+      else el.appendChild(newOpt);
+    }
+  });
 }
 
 // Switch Financial Year: save current, clear, load new FY data, re-render
@@ -4499,22 +4529,34 @@ function updateDashCoRecon() {
       if (mo < 0 || isNaN(yr)) return true;
       return d.startsWith(yr + '-' + String(mo + 1).padStart(2, '0'));
     }
-    if (!_fFr && !_fTo) return true;
-    if (_fFr && d < _fFr) return false;
-    if (_fTo && d > _fTo) return false;
+    // Use explicit date-range filter if set; otherwise fall back to the active FY window
+    var fr = _fFr, to = _fTo;
+    if (!fr && !to) {
+      var fyObj = FY_LIST && FY_LIST.find(function(f){ return f.id === (APP.activeFY||'2025-26'); });
+      if (fyObj) { fr = fyObj.from; to = fyObj.to; }
+    }
+    if (!fr && !to) return true;
+    if (fr && d < fr) return false;
+    if (to && d > to) return false;
     return true;
   }
   function monthInRange(monthStr) {
     // Used for creditData, gstr1Data, gstr3bData, rcmData — all store "Mon YYYY"
     if (!monthStr) return true;
     if (_fMo) return monthStr === _fMo;
-    if (!_fFr && !_fTo) return true;
+    // Use explicit date-range filter if set; otherwise fall back to the active FY window
+    var fr = _fFr, to = _fTo;
+    if (!fr && !to) {
+      var fyObj = FY_LIST && FY_LIST.find(function(f){ return f.id === (APP.activeFY||'2025-26'); });
+      if (fyObj) { fr = fyObj.from; to = fyObj.to; }
+    }
+    if (!fr && !to) return true;
     var p = (monthStr || '').split(' '), mo = _MO.indexOf(p[0]), yr = parseInt(p[1]);
     if (mo < 0 || isNaN(yr)) return true;
     var ms = yr + '-' + String(mo + 1).padStart(2, '0') + '-01';
     var me = yr + '-' + String(mo + 1).padStart(2, '0') + '-31';
-    if (_fFr && me < _fFr) return false;
-    if (_fTo && ms > _fTo) return false;
+    if (fr && me < fr) return false;
+    if (to && ms > to) return false;
     return true;
   }
 
@@ -6095,9 +6137,9 @@ loadGstr3bState();
                     '<option value="Jan">January</option><option value="Feb">February</option><option value="Mar">March</option>' +
                   '</select></div>' +
                 '<div class="fg"><label class="flabel">Year</label>' +
-                  '<select class="finput" id="g3b-year"><option value="2025">2025</option><option value="2026">2026</option><option value="2024">2024</option></select></div>' +
+                  '<select class="finput" id="g3b-year"><option value="2026">2026</option><option value="2027">2027</option><option value="2025">2025</option><option value="2024">2024</option></select></div>' +
                 '<div class="fg"><label class="flabel">Financial Year</label>' +
-                  '<select class="finput" id="g3b-fy"><option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option></select></div>' +
+                  '<select class="finput" id="g3b-fy"><option value="2026-27">FY 2026-27</option><option value="2025-26">FY 2025-26</option><option value="2024-25">FY 2024-25</option></select></div>' +
               '</div>' +
               '<div class="sync-actions" style="margin-top:12px">' +
                 '<button class="btn btn-primary" onclick="importGSTR3BPDF()">&#128229; Import &amp; Parse PDF</button>' +
